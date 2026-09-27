@@ -1,0 +1,144 @@
+---
+title: "First-Use Setup: Permissions, Status, and Pointer Check"
+sidebarTitle: First Use
+description: Detailed guide to granting camera and mic permissions, understanding every status string, verifying the hand pointer, and fixing common first-run problems.
+---
+
+After the development server is running at `http://127.0.0.1:5173`, there are a few setup steps between you and a working hands-free session. This page walks through granting browser permissions, interpreting each status message the editor displays, confirming the camera pointer is tracking correctly, and recovering from common first-run issues. Every step in this guide assumes you have already completed the [Quickstart](/quickstart) and can see the AirDrawio canvas in Chrome.
+
+## Granting permissions
+
+<Steps>
+  <Step title="Open AirDrawio in Chrome">
+    Navigate to **http://127.0.0.1:5173**. The editor opens in Mouse Mode. The canvas is fully functional with mouse and keyboard in this state; no permissions are needed yet.
+  </Step>
+
+  <Step title="Click Gesture in the top bar">
+    The **Gesture** button is in the mode-switch group on the right side of the top bar. Clicking it starts the camera and voice initialization sequence and immediately triggers the browser permission prompts.
+
+    The button label changes to **Starting…** and is briefly disabled while initialization is in progress.
+  </Step>
+
+  <Step title="Allow camera access">
+    Chrome displays an address-bar prompt asking whether `127.0.0.1:5173` may use your camera. Click **Allow**.
+
+    <Warning>
+      If you click **Block**, the camera cannot start and Gesture Mode will exit with an error. The status will show a camera error and the editor will fall back to Mouse Mode. See the troubleshooting accordion below for how to re-grant camera access.
+    </Warning>
+  </Step>
+
+  <Step title="Allow microphone access">
+    A second prompt asks for microphone access. Click **Allow** to enable offline voice commands.
+
+    <Warning>
+      If you block the microphone, the status will show **Microphone blocked** and voice commands will be unavailable. You can still use Gesture Mode with only the camera pointer and keyboard shortcuts, but you will need to re-grant the permission to use voice commands. See the troubleshooting accordion below.
+    </Warning>
+  </Step>
+
+  <Step title="Keep one hand in frame">
+    Hold one complete hand inside the camera's field of view. AirDrawio tracks a single hand. If no hand is visible, the status shows **Show one hand** and the green dot cursor does not appear.
+  </Step>
+
+  <Step title="Wait for Hand + local voice ready">
+    Watch the status indicator at the top right. Do not speak commands until it reads **Hand + local voice ready** — the Vosk model may take a moment to finish loading, especially on the first Gesture Mode start.
+  </Step>
+</Steps>
+
+## Status display reference
+
+The status string in the top-right toolbar tells you exactly what the system is doing. The full set of strings AirDrawio can display is:
+
+| Status | Meaning |
+|---|---|
+| **Loading hand model** | MediaPipe Hand Landmarker is initializing. The model weights are being fetched from the CDN (first run) or loaded from the browser cache. Do not try to use the pointer yet. |
+| **Show one hand** | Camera is active and returning frames, but no hand has been detected above the confidence threshold. Hold one hand clearly in frame. |
+| **Loading local voice** | Camera and hand tracking are working. The Vosk WebAssembly worker is loading the model from `public/models/vosk-small-en-in.model`. Voice commands are not yet active. |
+| **Hand + local voice ready** | Both inputs are fully operational. The cursor follows your index finger and voice commands are being recognized. |
+| **Voice error** | The Vosk recognition worker encountered an error. Use the **Retry microphone** button shown in the voice HUD to restart the audio pipeline. |
+| **Microphone blocked** | Chrome's microphone permission was denied or revoked. Voice commands are unavailable until the permission is re-granted. See the troubleshooting section below. |
+| **Tap retry microphone** | The microphone stream was suspended (often by the OS muting the input). Click the **Retry microphone** button in the voice command HUD. |
+| **Reconnecting voice** | The voice worker is attempting to recover from a transient error automatically. |
+| **Air Pen ready** | The Air Pen has been armed via the "draw" command. Show an open-thumb pose, then close your thumb to begin inking. |
+| **Air Pen drawing** | Ink is active. Trace your shape with your index finger. Open your thumb to finish and trigger shape recognition. |
+| **Zoom mode armed** | Gesture zoom is active. Move toward the camera while opening your thumb and index finger to zoom in; move away while closing them to zoom out. |
+
+<Note>
+  The MediaPipe runtime and model weights are loaded from their hosted CDN URLs. **An internet connection is required the first time Gesture Mode starts** in a new browser profile. Once cached by Chrome, subsequent starts work offline.
+</Note>
+
+## Verifying the pointer
+
+Once the status reads **Hand + local voice ready**, confirm that hand tracking is working correctly:
+
+1. Extend your **index finger** and keep the rest of your hand relaxed or loosely closed.
+2. Move your index fingertip slowly around the camera frame.
+3. A **green dot cursor** should follow the fingertip across the canvas in real time.
+4. The cursor movement should feel like a mirrored selfie — moving your hand right moves the dot right (mirror mode is on by default).
+
+If the dot lags noticeably or jumps, try adjusting the **Smoothing** slider in the Settings panel on the right rail. Increasing smoothing reduces jitter at the cost of a slightly slower response.
+
+## Camera preview
+
+A small **camera preview** appears in the **top-right corner of the canvas** when Gesture Mode is active and the Camera preview toggle is enabled in the Settings panel. This preview shows only the hand skeleton wireframe — the 21 MediaPipe landmarks connected by lines — drawn on a black background. No camera image or video feed is ever shown in the preview. You can disable the preview entirely with the **Camera preview** toggle in the Settings panel without affecting tracking or voice.
+
+## Voice graph visualizer
+
+Below the camera preview, the **voice graph visualizer** displays:
+
+- A live **microphone waveform** drawn as the raw audio input arrives — it moves whenever the mic is picking up sound, even before a command is recognized.
+- The **last recognized phrase** printed as text beneath the waveform.
+- The name of the **active microphone device**.
+
+If the waveform stays completely flat even when you speak, Chrome has either suspended the microphone stream or the wrong input device is selected. Check System Settings (macOS) or Sound settings (Windows) to confirm the correct mic is set as default, then click **Retry microphone** in the voice command HUD.
+
+## Returning to Mouse Mode
+
+Click the **Mouse** button in the top bar at any time to stop Gesture Mode. This action:
+
+- Stops the camera stream and releases the webcam
+- Stops the Vosk WebAssembly worker and releases the microphone
+- Resets the canvas cursor back to the standard mouse pointer
+
+Mouse, trackpad, and keyboard shortcuts continue to work exactly as before. You can switch back to Gesture Mode again at any time by clicking **Gesture**.
+
+## Troubleshooting first-run issues
+
+<Accordion title="Camera permission was denied — how do I re-grant it?">
+  1. Click the **lock icon** (or camera icon) in Chrome's address bar while on `http://127.0.0.1:5173`.
+  2. Find **Camera** in the permissions list and change it from **Blocked** to **Allow**.
+  3. Chrome will prompt you to reload the page. Click **Reload**.
+  4. Click **Gesture** again and allow the permission when prompted.
+
+  If no icon appears in the address bar, navigate to `chrome://settings/content/camera`, find `127.0.0.1:5173` in the blocked list, and remove it, then reload the page.
+</Accordion>
+
+<Accordion title="Microphone permission was denied — how do I re-grant it?">
+  Follow the same steps as for the camera permission above, but look for the **Microphone** entry in the address-bar permissions panel. Alternatively, go to `chrome://settings/content/microphone`, remove `127.0.0.1:5173` from the blocked list, reload, and click **Gesture** again.
+</Accordion>
+
+<Accordion title="The status is stuck on 'Loading hand model'">
+  This status means MediaPipe is still downloading or initializing the hand model. On the first run, the model assets are fetched from the MediaPipe CDN — this can take several seconds on a slow connection. Check that you have an active internet connection. If the status does not progress after 30 seconds, open Chrome DevTools (`F12`), check the **Network** tab for failed requests, and the **Console** tab for error messages. Refreshing the page and clicking **Gesture** again usually resolves transient network failures.
+</Accordion>
+
+<Accordion title="The green dot cursor does not appear or moves erratically">
+  - Make sure only **one hand** is visible in the camera frame. Multiple hands can confuse the tracker.
+  - Ensure the hand is well-lit and the background is not cluttered.
+  - Lower the **Confidence** threshold slider in the Settings panel if your hand is consistently detected at low confidence.
+  - Increase the **Smoothing** value to reduce jitter from fast or noisy landmark readings.
+  - The status must show **Hand + local voice ready** (or at minimum **Show one hand** → hand detected). If it shows **Loading hand model**, the tracker is not yet active.
+</Accordion>
+
+<Accordion title="The voice waveform is flat — no audio is being picked up">
+  - Confirm the correct microphone is selected as the system default in macOS **System Settings → Sound → Input** or Windows **Sound → Recording**.
+  - Click **Retry microphone** in the voice command HUD to restart the audio pipeline.
+  - Check `chrome://settings/content/microphone` to confirm `127.0.0.1:5173` is in the allowed list, not the blocked list.
+  - On macOS, verify that Chrome has microphone access in **System Settings → Privacy & Security → Microphone**.
+</Accordion>
+
+<Accordion title="Voice commands are not being recognized even though the waveform moves">
+  The Vosk model may still be loading — wait until the status shows **Hand + local voice ready** before speaking commands. The grammar requires short, deliberate phrases with a brief pause after speaking. Try speaking each command as a single word or short phrase and pausing for half a second. Avoid running commands together without a pause. The recognizer will display the last heard phrase in the voice graph visualizer even if it does not match a command, which helps diagnose what the model is hearing.
+</Accordion>
+
+<Accordion title="'Voice error' or 'Microphone blocked' appears after Gesture Mode starts">
+  Click the **Retry microphone** button that appears in the voice command HUD when either of these statuses is shown. This stops the current audio pipeline and restarts the microphone request and Vosk worker from scratch. If the error persists, try refreshing the page and granting permissions again from the start.
+</Accordion>

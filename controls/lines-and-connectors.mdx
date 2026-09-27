@@ -1,0 +1,95 @@
+---
+title: "Drawing Free Lines and Smart Connector Arrows in AirDrawio"
+sidebarTitle: "Lines & Connectors"
+description: "Step-by-step guide to drawing free straight lines, attaching smart connector arrows between shapes, and locking exact side anchors using voice commands."
+---
+
+AirDrawio provides two distinct mechanisms for connecting and annotating diagrams: free straight lines that float independently on the canvas, and smart connector arrows that snap to shape perimeters and stay attached as shapes move. Both are fully controllable by voice and hand gesture, with no need to grab tiny connection handles.
+
+<Tip>
+  When shape connection handles feel too small to target accurately with the camera pointer, switch to the **Connector** tool (`connector`) for the most reliable gesture-driven connector workflow. The Connector tool listens for a click on any shape and handles snapping automatically.
+</Tip>
+
+---
+
+## Free straight lines
+
+A free line is an unattached edge that spans two fixed coordinates on the canvas.
+
+<Steps>
+  <Step title="Switch to the Line tool">
+    Say **"line"** or press `A`. The tool bar highlights the Line tool and a notice confirms that you can hold-and-drag anywhere.
+  </Step>
+  <Step title="Anchor the start point">
+    Move your index-finger pointer to the start position. Say **"line start"** or **"hold"** to anchor the first endpoint. A preview line appears from that position and tracks your pointer.
+  </Step>
+  <Step title="Move to the endpoint">
+    Move your pointer to where the line should end. The live preview follows.
+  </Step>
+  <Step title="Complete the line">
+    Say **"release"**. AirDrawio snaps both endpoints to the nearest grid points and inserts a clean straight line.
+  </Step>
+</Steps>
+
+<Note>
+  Free lines drawn with the Line tool are not attached to any shape. If you later move a nearby shape, the line stays in place. To create a line that tracks its endpoints as shapes move, use a smart connector instead.
+</Note>
+
+---
+
+## Smart connector arrows
+
+Smart connectors snap to the nearest point on a shape's perimeter and remain attached when either shape is repositioned.
+
+<Steps>
+  <Step title="Hover over the source shape">
+    Move your index-finger pointer inside the boundary of the shape you want the arrow to originate from.
+  </Step>
+  <Step title="Say 'start arrow'">
+    Say **"start arrow"**. AirDrawio finds the closest point on the shape's perimeter to your pointer, records it as the source anchor, and starts a live preview line. A notice confirms the anchor side (for example, *"Arrow started at the right side"*).
+  </Step>
+  <Step title="Move to the destination shape">
+    Move your pointer inside the destination shape. The preview line follows and snaps to the destination's perimeter whenever your pointer is over a valid target.
+  </Step>
+  <Step title="Say 'end arrow'">
+    Say **"end arrow"** (or **"select"**). AirDrawio snaps the destination anchor to the nearest perimeter point, inserts the edge with explicit `exitX`/`exitY` and `entryX`/`entryY` style properties, and removes the preview.
+  </Step>
+</Steps>
+
+The resulting connector uses AirDrawio's default orthogonal edge style with a filled block arrowhead. Because the geometry is attached to both cells, dragging either shape automatically re-routes the connector.
+
+---
+
+## Exact side connectors
+
+When you need a connector to leave or enter a shape at a specific side — for example, always exiting the bottom center and entering the top center — use the directional side commands instead of `start arrow` / `end arrow`.
+
+| Say | Anchor position |
+|-----|-----------------|
+| `select top` | Horizontal center of the top edge (x = 0.5, y = 0) |
+| `select bottom` | Horizontal center of the bottom edge (x = 0.5, y = 1) |
+| `select left` | Vertical center of the left edge (x = 0, y = 0.5) |
+| `select right` | Vertical center of the right edge (x = 1, y = 0.5) |
+
+**How it works:**
+
+1. Hover over the **source** shape and say one of the side commands (for example, `select right`). AirDrawio latches that shape as the source and displays a visible anchor marker at the chosen side. A notice confirms: *"right source latched. Point at another shape and name its connection side."*
+2. Move the pointer to the **destination** shape and say a side command (for example, `select top`). AirDrawio creates the edge immediately, embedding fixed `exitX`/`exitY` for the source side and `entryX`/`entryY` for the destination side.
+
+The connector will always exit and enter at exactly those proportional positions on each shape, regardless of how the shapes are resized or moved.
+
+---
+
+## Cancelling an in-progress connector
+
+Say **"cancel"** at any point before completing a connector to abort the operation. The pending source anchor is cleared, the preview line is removed, and AirDrawio returns to normal pointer mode. The same command also clears an in-progress voice-anchor source if you have used a side command but have not yet named the destination side.
+
+---
+
+<Card title="Voice Commands" icon="microphone" href="/controls/voice-commands">
+  Complete reference for all spoken commands including anchor, cancel, and tool-switch phrases.
+</Card>
+
+<Card title="Air Pen" icon="pen-nib" href="/controls/air-pen">
+  Draw connector arrows and lines freehand by tracing them in the air.
+</Card>

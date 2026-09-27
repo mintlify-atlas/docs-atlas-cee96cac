@@ -1,0 +1,100 @@
+---
+title: "AirDrawio: Hands-Free Diagram Editor via Webcam and Voice"
+sidebarTitle: Introduction
+description: Learn what AirDrawio is, how its two-input model of camera pointer and offline voice commands works, and what privacy guarantees it makes.
+---
+
+AirDrawio is a browser-based diagram editor you control without touching a keyboard or mouse. Point anywhere on the canvas by moving your index fingertip in front of a webcam, then issue short spoken commands — "hold," "release," "rectangle," "start arrow" — to click, drag, create shapes, and connect them. The editor is built on [maxGraph](https://maxgraph.github.io/maxGraph/), the maintained TypeScript successor to the graph engine that powers diagrams.net, so every gesture produces real selection handles, resize grips, attached connectors, inline text editors, and undo history rather than a simplified mock. Mouse, trackpad, and keyboard shortcuts remain available at any time, so you can mix input methods freely within the same session.
+
+## Two-input model
+
+AirDrawio separates pointer movement from discrete actions. The camera tracks your index fingertip continuously and moves a green dot cursor across the screen. Voice commands then act on whatever the cursor is hovering over — clicking, pressing, releasing, or creating shapes. This separation means the cursor never jumps unexpectedly when you speak, and spoken words never accidentally type text into a label.
+
+## MediaPipe hand tracking
+
+The camera pipeline is built on the [MediaPipe Hand Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker) task, which detects 21 three-dimensional landmarks per hand at real-time frame rates. AirDrawio uses landmark 8 (the index fingertip) as the cursor anchor. Landmarks are smoothed, dead-zoned, and mapped to viewport coordinates before any pointer event is dispatched. The MediaPipe runtime and model weights are loaded from their hosted CDN URLs; an internet connection is required the first time Gesture Mode starts in a new browser profile, after which the browser caches the assets.
+
+<Note>
+  The camera preview in the top-right corner renders only the hand skeleton wireframe — no video frames are stored, uploaded, or displayed outside of that skeleton overlay.
+</Note>
+
+## Offline voice recognition via Vosk WebAssembly
+
+Voice commands run entirely inside the browser using [Vosk](https://alphacephei.com/vosk/) compiled to WebAssembly. The model file (`public/models/vosk-small-en-in.model`) ships with the repository and is loaded locally. No audio leaves the page, no cloud speech API is called, and no network request is made during recognition. The grammar is intentionally small so that recognition is fast and low-latency even on a lightweight model.
+
+<Note>
+  Voice commands are fully offline. Microphone audio is processed in a WebAssembly worker inside the browser tab and never transmitted to any server.
+</Note>
+
+## Air Pen drawing
+
+Say **"draw"** to arm the Air Pen. Close your thumb toward your palm to start inking at the current pointer position, trace the shape with your index finger, then open your thumb to finish the stroke. AirDrawio automatically classifies the result:
+
+- Closed polygonal strokes → **rectangle** or **ellipse**
+- Straight open strokes → **line** or **connector arrow**
+- Short scribble marks → **editable text node**
+- Intentionally curved strokes → **smooth editable curve**
+
+Thumb detection is normalized against your palm size and uses 3D world landmarks so it works regardless of hand orientation or camera angle.
+
+## Voice command reference
+
+Commands use a restricted offline grammar for speed and reliability. Every action is triggered by a short phrase followed by a brief pause.
+
+| Action | Say |
+|---|---|
+| Click hovered target | "Select" or "left click" |
+| Begin a drag or marquee | "Hold" |
+| Finish a drag | "Release" |
+| Create shape at pointer | "Rectangle", "ellipse", or "text" |
+| Start an attached arrow | "Start arrow" … "End arrow" |
+| Start / stop Air Pen | "Draw" / "Stop drawing" |
+| Start / stop gesture zoom | "Zoom" / "End zoom" |
+| Rename with Wispr Flow | "Rename" / "Done" |
+| Clipboard | "Copy", "cut", or "paste" |
+| History | "Undo" or "redo" |
+| Cancel current action | "Cancel" |
+
+The grammar also accepts **"old"** as a substitute for **"hold"** and **"please"** as a substitute for **"release"** when either is the entire recognized phrase.
+
+## Optional Wispr Flow integration (macOS)
+
+For free-form shape renaming, AirDrawio can hand control to [Wispr Flow](https://wisprflow.ai/). Hover over a box, say **"rename,"** and AirDrawio opens the inline label editor and sends a double-Fn hotkey to Wispr via a small local macOS native bridge built into the Vite dev server. When you say **"done,"** AirDrawio closes the Wispr session and commits the label. This integration requires a one-time Accessibility permission grant in macOS System Settings and is entirely optional — the built-in command dictation mode works without it.
+
+## Mouse and keyboard fallback
+
+Every action available by voice or gesture can also be performed with a mouse, trackpad, or keyboard. Click **Mouse** in the top bar to return to conventional input at any time. Keyboard shortcuts remain active even in Gesture Mode for tool switching (`V`, `R`, `O`, `A`, `C`, `T`, `H`), deletion (`Delete` / `Backspace`), and undo/redo (`Cmd/Ctrl + Z` / `Cmd/Ctrl + Shift + Z`).
+
+## Privacy summary
+
+| Concern | Behavior |
+|---|---|
+| Camera frames | Processed in-page by MediaPipe; never stored or transmitted |
+| Microphone audio | Decoded locally by Vosk WebAssembly; never sent to a speech service |
+| Wispr Flow | Invoked only when you say "rename"; follows Wispr's own privacy behavior |
+| MediaPipe assets | Loaded from CDN on first use; cached by the browser thereafter |
+
+## Requirements
+
+- **Node.js 20 or newer** and npm (for the development server)
+- **Google Chrome** or another modern Chromium browser
+- **Webcam and microphone** accessible to the browser
+- **Internet connection** on first Gesture Mode start (to load and cache MediaPipe)
+- **macOS + Xcode Command Line Tools** only for the optional Wispr Flow rename bridge
+
+## Explore further
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Clone, install, and run AirDrawio in minutes with step-by-step commands.
+  </Card>
+  <Card title="Voice Commands" icon="microphone" href="/controls/voice-commands">
+    Full reference for every offline voice command and its grammar substitutions.
+  </Card>
+  <Card title="Air Pen" icon="pen-nib" href="/controls/air-pen">
+    How thumb-close drawing works, shape recognition rules, and drawing tips.
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/development/architecture">
+    How the camera, Vosk worker, maxGraph engine, and Wispr bridge connect.
+  </Card>
+</CardGroup>

@@ -1,0 +1,165 @@
+---
+title: "AirDrawio Voice Commands: Complete Spoken Control Reference"
+sidebarTitle: "Voice Commands"
+description: "Complete reference for every voice command recognized by AirDrawio's offline Vosk grammar, covering clicks, shapes, tools, connectors, zoom, and editing."
+---
+
+AirDrawio routes all discrete actions through a restricted offline grammar powered by Vosk WebAssembly running entirely in your browser. Spoken words are decoded locally against a fixed list of known phrases — microphone audio never leaves the page. Because the grammar is intentionally small, short commands arrive quickly from partial results rather than waiting for an end-of-utterance timeout. Speak one command, pause briefly, then continue moving your hand.
+
+<Note>
+  AirDrawio matches speech against a restricted offline grammar. Any utterance that does not resolve to a recognized phrase is silently ignored and cannot accidentally trigger a diagram action.
+</Note>
+
+---
+
+## Pointer actions
+
+These commands translate directly into pointer-button events at the current index-finger position.
+
+| Say | Action |
+|-----|--------|
+| `select` / `left click` / `click` | Primary click at the pointer |
+| `select that shape` | Select the cell currently under the pointer |
+| `hold` | Begin a drag or marquee-selection stroke |
+| `release` | Finish the drag and drop the held object |
+| `right click` | Right mouse button click at the pointer |
+| `right hold` | Right mouse button hold at the pointer |
+
+<Note>
+  The grammar accepts two common acoustic substitutions: **"old"** is treated identically to **"hold"**, and **"please"** is treated identically to **"release"** — but only when either word is the complete recognized command, never as part of a longer phrase.
+</Note>
+
+---
+
+## Shape creation
+
+Shape creation commands insert a new vertex centered at the pointer's current position.
+
+| Say | Action |
+|-----|--------|
+| `rectangle` | Create a rectangle at the pointer |
+| `ellipse` | Create an ellipse at the pointer |
+| `text` | Create a text label at the pointer and open the inline editor |
+
+---
+
+## Tools
+
+| Say | Action |
+|-----|--------|
+| `pointer` | Switch to the Pointer tool |
+| `line` | Switch to the Line tool |
+| `connector` | Switch to the Connector tool |
+| `pan` | Switch to the Pan tool |
+
+---
+
+## Connectors
+
+### Smart connectors (auto-snap)
+
+| Say | Action |
+|-----|--------|
+| `start arrow` | Begin a smart connector, snapping to the nearest perimeter point of the source shape |
+| `end arrow` | Finish the connector, snapping to the nearest perimeter point of the destination shape |
+
+After saying `start arrow`, a live preview line follows the pointer until you say `end arrow` or `select` over the destination shape. The connector is attached to both shapes and moves with them when either shape is dragged.
+
+### Exact side anchors
+
+| Say | Action |
+|-----|--------|
+| `select top` | Latch horizontal-center of the top edge as source or destination anchor |
+| `select bottom` | Latch horizontal-center of the bottom edge |
+| `select left` | Latch vertical-center of the left edge |
+| `select right` | Latch vertical-center of the right edge |
+
+The first side command latches the shape under the pointer as the connector source and shows a visible anchor marker. The second side command (over a *different* shape) creates the edge with fixed `exitX`/`exitY` and `entryX`/`entryY` values so the connector always leaves and enters at the same exact points, regardless of how the diagram is rearranged.
+
+---
+
+## Air Pen
+
+| Say | Action |
+|-----|--------|
+| `draw` | Arm the Air Pen and enter drawing mode |
+| `stop drawing` | Disarm the Air Pen and return to normal controls |
+
+See [Air Pen](/controls/air-pen) for the full drawing workflow.
+
+---
+
+## Gesture zoom
+
+| Say | Action |
+|-----|--------|
+| `zoom` | Enter gesture zoom mode; the canvas point under the pointer stays fixed |
+| `end zoom` | Exit gesture zoom mode and restore normal controls |
+
+See [Gesture Zoom](/controls/gesture-zoom) for the full gesture description.
+
+---
+
+## Rename with Wispr (optional, macOS)
+
+| Say | Action |
+|-----|--------|
+| `rename` | Open the inline shape editor and trigger the Wispr Flow hotkey |
+| `done` | Commit the new label and close the Wispr session |
+
+Wispr integration is optional and requires macOS with Accessibility permission granted to the process running the Vite dev server. Free-form label text dictated through Wispr is intentionally excluded from the local grammar.
+
+---
+
+## Built-in label dictation
+
+| Say | Action |
+|-----|--------|
+| `edit text` | Enter label-dictation mode for the hovered or selected shape |
+| `right shift` | Finish dictation and commit the label |
+
+In dictation mode the local recognizer still understands only its fixed grammar phrases. Recognized words are appended to the label until `right shift` is spoken.
+
+---
+
+## Editing and clipboard
+
+| Say | Action |
+|-----|--------|
+| `undo` | Undo the last diagram action |
+| `redo` | Redo the last undone action |
+| `delete` | Delete the current selection |
+| `copy` | Copy the current selection to the clipboard |
+| `cut` | Cut the current selection |
+| `paste` | Paste at the pointer's current position |
+| `cancel` | Cancel an in-progress hold, connector, or drawing stroke |
+
+---
+
+## Multi-select, move, and group operations
+
+Multi-selection uses a marquee drawn entirely with voice and hand movement:
+
+1. Switch to the **Pointer** tool (say `pointer` if needed).
+2. Point at an empty area of the canvas.
+3. Say `hold` — AirDrawio anchors one corner of the marquee rectangle.
+4. Move your index finger to sweep the selection region across the shapes you want.
+5. Say `release` — all vertex cells inside the marquee are selected.
+
+Once a group is selected:
+
+- Say `hold` while pointing over any selected object to begin moving the entire group; say `release` to drop it.
+- Say `delete` to remove all selected shapes.
+- Say `copy` or `cut`, move the pointer to the desired destination, and say `paste` to place the copied group there.
+
+<Card title="Air Pen" icon="pen-nib" href="/controls/air-pen">
+  Draw shapes with your thumb and index finger instead of speaking shape commands.
+</Card>
+
+<Card title="Gesture Zoom" icon="magnifying-glass" href="/controls/gesture-zoom">
+  Zoom in and out using hand depth and thumb-index aperture.
+</Card>
+
+<Card title="Lines & Connectors" icon="arrow-right" href="/controls/lines-and-connectors">
+  Draw free lines and attach smart connector arrows between shapes.
+</Card>

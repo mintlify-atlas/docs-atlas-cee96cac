@@ -1,0 +1,90 @@
+{
+  "projectType": "saas",
+  "projectName": "AirDrawio",
+  "projectDescription": "A hands-free diagram editor powered by webcam hand tracking and browser-local voice commands, built on maxGraph for full-featured diagramming without touching the keyboard or mouse.",
+  "theme": "willow",
+  "primaryColor": "#ebedf0",
+  "lightColor": "#41cc5d",
+  "darkColor": "#9ce8b4",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "first-use"
+            ]
+          },
+          {
+            "group": "Voice & Camera Controls",
+            "pages": [
+              "controls/voice-commands",
+              "controls/air-pen",
+              "controls/gesture-zoom",
+              "controls/lines-and-connectors"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/settings",
+              "configuration/pinch-training",
+              "configuration/wispr-flow",
+              "configuration/keyboard-shortcuts"
+            ]
+          },
+          {
+            "group": "Architecture & Development",
+            "pages": [
+              "development/architecture",
+              "development/modules",
+              "development/gesture-model",
+              "development/testing",
+              "development/contributing"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Index-fingertip camera pointer via MediaPipe Hand Landmarker",
+    "Browser-local offline voice commands via Vosk WebAssembly",
+    "Air Pen drawing with adaptive thumb calibration and automatic shape recognition",
+    "Real maxGraph editor with selection, resize, drag, connectors, undo, and text labels",
+    "Gesture zoom with orientation-independent pinch measurement",
+    "Voice-controlled shape creation, multi-select, clipboard, and deletion",
+    "Optional Wispr Flow integration for free-form shape renaming on macOS",
+    "Personal pinch trainer with local-storage persistence",
+    "Nine-step guided voice-and-camera test flow",
+    "Full keyboard and mouse fallback"
+  ],
+  "publicApiSurface": [
+    "InputMode: 'mouse' | 'gesture'",
+    "GestureSettings (sensitivity, smoothing, pinchThreshold, doublePinchMs, confidenceThreshold, mirrorX, showPreview, showDebug, voiceCommands, pinchActions)",
+    "DrawioController.addShape / addShapeAtClientPoint",
+    "DrawioController.selectCellAtClientPoint",
+    "DrawioController.startSmartConnectorAtClientPoint / finishSmartConnectorAtClientPoint",
+    "DrawioController.selectVoiceAnchorAtClientPoint",
+    "DrawioController.beginRenameAtClientPoint",
+    "DrawioController.createAirDrawing",
+    "DrawioController.zoomAtClientPoint / zoomIn / zoomOut / resetZoom",
+    "DrawioController.undo / redo / deleteSelection",
+    "DrawioController.copyAtClientPoint / cutAtClientPoint / pasteAtClientPoint",
+    "VoiceCommand types: click, hold, release, selectShape, selectAnchor, rename, finishRename, startArrow, finishArrow, startLine, startZoom, endZoom, startDraw, endDraw, tool, addShape, undo, redo, delete, copy, cut, paste, cancel",
+    "GestureProfile (loadGestureProfile / saveGestureProfile / clearGestureProfile)",
+    "CameraManager.start / stop",
+    "HandTracker.initialize / detect / close",
+    "LandmarkSmoother.update / reset / setConfig",
+    "ThumbDrawDetector.update / reset",
+    "AirStrokeRecognizer.recognize",
+    "CoordinateMapper.map / applyDeadZone / setConfig",
+    "VoiceCommandController.start / stop / acceptAudio / setDictationMode",
+    "VoiceInputMonitor.start / stop",
+    "WisprBridge.triggerWisprHotkey / openAccessibilitySettings"
+  ]
+}

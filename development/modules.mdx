@@ -1,0 +1,111 @@
+---
+title: "AirDrawio TypeScript Module and Component Reference"
+sidebarTitle: "Modules"
+description: "Every TypeScript module in AirDrawio grouped by area — camera, tracking, cursor, gestures, drawing, maxGraph integration, voice, native bridge, and UI."
+---
+
+AirDrawio is structured around focused, single-responsibility modules. Each area owns a narrow slice of the pipeline: camera capture, landmark inference, coordinate mapping, gesture state, pointer dispatch, voice recognition, or graph control. This page documents every module and its responsibility, grouped by area.
+
+<AccordionGroup>
+
+<Accordion title="Camera & Tracking">
+
+| Module | Responsibility |
+|--------|---------------|
+| `camera/CameraManager.ts` | Owns `getUserMedia`, video element playback, and stream cleanup. Requests ideal 1280×720 at 30 fps from the user-facing camera. Stops all tracks on `stop()`. |
+| `tracking/HandTracker.ts` | Owns MediaPipe initialization and per-frame video inference. Pins `@mediapipe/tasks-vision@1.0.1` and the official hosted float16 hand landmarker model. Attempts GPU delegate first and falls back to CPU. Exposes `initialize()`, `detect(video, timestamp)`, and `close()`. |
+| `tracking/LandmarkSmoother.ts` | Velocity-sensitive exponential moving average over a single landmark. Fast motion raises alpha to reduce lag; slow motion keeps alpha low for precision. Exposes `update(landmark)` and `reset()`. |
+| `tracking/handTypes.ts` | Defines `NormalizedLandmark`, `HandFrame` (21 image landmarks, optional world landmarks, confidence, timestamp), and `TrackingSnapshot` (the React-visible snapshot with `handDetected`, `confidence`, `fps`, `index`, `thumb`, `pinchRatio`, `pinchImageRatio`, `pinchWorldRatio`, and `pinchSource`). |
+
+</Accordion>
+
+<Accordion title="Cursor & Input">
+
+| Module | Responsibility |
+|--------|---------------|
+| `cursor/CoordinateMapper.ts` | Maps a mirrored normalized landmark to viewport pixel coordinates. Applies configurable sensitivity scaling around the viewport center and a pixel dead zone to suppress sub-pixel tremor. |
+| `cursor/CursorController.ts` | Updates the virtual cursor DOM element outside React rendering on every frame. Translates `GestureEvent` values and voice-driven actions (`voiceMove`, `voiceClick`, `voicePress`, `voiceRelease`) into `PointerEventBridge` calls. Applies CSS state classes to the cursor element. |
+| `cursor/VirtualCursor.tsx` | The visible cursor dot React component. Controlled entirely through a forwarded `ref` by `CursorController`; never re-renders from gesture data. |
+
+</Accordion>
+
+<Accordion title="Gesture Engine">
+
+| Module | Responsibility |
+|--------|---------------|
+| `gestures/GestureEngine.ts` | Orchestrates pinch detection, confidence gating, and state machine transitions for one hand frame. Exposes `update(frame, position)`, `handLost(timestamp)`, `getState()`, and threshold setters. |
+| `gestures/GestureStateMachine.ts` | Owns IDLE → HOVERING → PINCHED → DRAGGING → HOVERING transitions. Emits typed `GestureEvent` objects (`MOVE`, `PINCH_START`, `DRAG_START`, `DRAG_MOVE`, `PINCH_END`, `DOUBLE_PINCH`, `HAND_LOST`). |
+| `gestures/PinchDetector.ts` | Orientation-independent 3D pinch ratio measurement with hysteresis, minimum-duration confirmation, and post-release cooldown. Prefers world landmarks with z-axis; falls back to robust 2D palm scale. |
+| `gestures/DoublePinchDetector.ts` | Detects two completed pinches within a configurable interval (default 400 ms, range 250–650 ms) and emits `DOUBLE_PINCH`. |
+| `gestures/ZoomGestureDetector.ts` | Classifies deliberate zoom strokes from landmark sequences and manages the reset phase between strokes. Returns a zoom factor and the current phase (`ready`, `zooming-in`, `zooming-out`, `resetting`). |
+| `gestures/GestureProfile.ts` | Loads, saves, and clears a personal pinch profile from `localStorage`. The profile stores the trained threshold as a numeric ratio. |
+| `gestures/gestureTypes.ts` | Defines `GestureState`, `PointerPosition`, `GestureEvent`, `GestureInput`, `GestureReading`, and `PinchPhase`. |
+
+</Accordion>
+
+<Accordion title="Drawing">
+
+| Module | Responsibility |
+|--------|---------------|
+| `drawing/ThumbDrawDetector.ts` | Adaptive thumb-close/open detector for the Air Pen. Each `draw` command resets the detector; the user's comfortable open pose during calibration becomes the session baseline. Uses 3D world landmarks when available. Applies hysteresis, dwell timing, and a short neutral-frame grace period to tolerate landmark jitter. |
+| `drawing/AirStrokeRecognizer.ts` | Classifies and cleans completed Air Pen strokes. Detects rectangles, ellipses, straight lines, connector arrows (via arrow-tip detection), text-like marks, and deliberately curved strokes. Applies Ramer–Douglas–Peucker simplification to curves. Exports `recognizeAirStroke(points)` and `simplifyStroke(points, epsilon)`. |
+
+</Accordion>
+
+<Accordion title="maxGraph Integration">
+
+| Module | Responsibility |
+|--------|---------------|
+| `drawio/DrawioController.ts` | Configures the maxGraph `Graph` instance, manages the undo stack, seeds the initial diagram, and implements all graph-level operations: tool switching, shape insertion, air drawing, straight-line gestures, smart connectors, voice anchor connectors, clipboard, zoom, and the gesture test fixture. |
+| `drawio/DrawioBridge.ts` | Interface (`DrawioBridge`) that `DrawioController` implements. Defines `DiagramTool` (`pointer`, `arrow`, `connector`, `pan`) and `ShapeKind` (`rectangle`, `ellipse`, `text`). Separates the UI layer from the maxGraph controller so a future fork can swap the implementation. |
+| `drawio/DrawioControllerContext.ts` | React context that exposes the ready `DrawioController` to components below `MaxGraphCanvas` without prop drilling. |
+| `drawio/PointerEventBridge.ts` | Converts semantic pointer actions (move, down, up, click, double-click, cancel) into `PointerEvent` objects and matching `MouseEvent` compatibility events dispatched on the element under the cursor. Uses pointer type `pen` and a fixed pointer ID so maxGraph treats the synthetic input as a consistent pen device. |
+| `drawio/perimeterAnchor.ts` | Calculates the nearest perimeter point (as normalized anchor coordinates) for a given hit position relative to a cell's bounding box. Used by both the smart connector and voice anchor commands. |
+
+</Accordion>
+
+<Accordion title="Voice">
+
+| Module | Responsibility |
+|--------|---------------|
+| `voice/VoiceCommandController.ts` | Owns the browser-local Vosk recognizer, restricted grammar, partial-result debouncing, duplicate-command suppression, and command/dictation mode switching. Audio stays on-device; the WebAssembly worker runs inside the browser tab. |
+| `voice/VoiceInputMonitor.ts` | Owns microphone capture via `getUserMedia`, the `AudioContext`, the Web Audio analyser used by the live waveform display, and the `ScriptProcessorNode` that feeds 2048-sample PCM frames to `VoiceCommandController`. Disables echo cancellation, noise suppression, and auto-gain to keep raw audio available for both the oscilloscope and the local decoder. |
+| `voice/voiceCommandModel.ts` | Normalizes transcripts (lowercased, punctuation stripped, whitespace collapsed) and parses them against the explicit command grammar via `parseVoiceCommand` and `parseVoiceCommands`. Exports `LOCAL_VOICE_COMMAND_PHRASES` — the narrow grammar list that includes `[unk]` so unrelated speech is not forced to the nearest command. |
+| `voice/SpeechController.ts` | Web Speech API fallback used for label dictation when local Vosk is unavailable. |
+| `voice/VoiceTextController.ts` | Coordinates label text dictation, managing the transition between command mode and dictation mode for the selected cell. |
+
+</Accordion>
+
+<Accordion title="Native Bridge">
+
+| Module | Responsibility |
+|--------|---------------|
+| `native/WisprBridge.ts` | Exports `triggerWisprHotkey(action)` (posts to `/api/wispr-hotkey`) and `openAccessibilitySettings()` (posts to `/api/open-accessibility-settings`). Both endpoints are implemented in the Vite dev server plugin in `vite.config.ts` using a compiled macOS native addon (`native/wispr_hotkey.cc`). The browser cannot send trusted system-wide Fn key events by itself; the bridge fills that gap. |
+
+</Accordion>
+
+<Accordion title="UI Components">
+
+| Module | Responsibility |
+|--------|---------------|
+| `ui/MaxGraphCanvas.tsx` | Mounts the maxGraph editor container, instantiates `DrawioController` on mount, and forwards the ready controller via callback and context. |
+| `ui/CameraPreview.tsx` | Renders a black-background skeleton-only camera preview in the top-right corner. Draws MediaPipe hand landmark connections via an imperative `draw(landmarks, pinchRatio)` handle — never from React state. |
+| `ui/VoiceGraphVisualizer.tsx` | Waveform and frequency spectrum display driven by the Web Audio `AnalyserNode`. Shows the last recognized phrase and recognition status. |
+| `ui/GestureToolbar.tsx` | Gesture-friendly tool and shape toolbar. Buttons are sized and spaced for index-fingertip targeting. |
+| `ui/SettingsPanel.tsx` | Right-rail settings controls: smoothing, sensitivity, pinch threshold, double-pinch interval, confidence threshold, mirror, debug, voice commands, and pinch fallback toggles. |
+| `ui/StatusPanel.tsx` | Camera, voice, gesture, fps, and confidence state panel. Updated at the React state cadence (~110 ms), not on every frame. |
+| `ui/GestureTrainer.tsx` | Ten-capture personal pinch trainer UI. Records normalized ratios only — no camera images. Computes a robust threshold using a median-deviation margin. |
+| `ui/GuidedTestFlow.tsx` | Nine-step guided voice and camera test. Creates temporary fixture shapes, explains each action, reads maxGraph cell geometry to verify results, offers coaching on failure, records pass/fail, and removes fixtures on close. |
+| `ui/DebugOverlay.tsx` | Pinch ratios (image and world), pointer coordinates, and gesture state overlay. Visible when `showDebug: true` in settings. |
+
+</Accordion>
+
+<Accordion title="Refinement (Future)">
+
+| Module | Responsibility |
+|--------|---------------|
+| `refinement/DiagramRefiner.ts` | Declares the `DiagramRefiner` interface with a single `refine(diagram)` method that returns a `Promise<DiagramRepresentation>`. The implementation is intentionally empty — this is a reserved boundary for AI-assisted layout. |
+
+</Accordion>
+
+</AccordionGroup>

@@ -1,0 +1,85 @@
+---
+title: "Personal Pinch Trainer for Camera-Only Gesture Control"
+sidebarTitle: "Pinch Training"
+description: "Train AirDrawio to recognize your personal pinch gesture with ten samples, improving accuracy for the optional camera-only click and drag fallback."
+---
+
+When the **Pinch fallback** option is enabled, AirDrawio detects a finger-pinch as a substitute for mouse clicks and drags. Because hand size, skin tone, camera angle, and lens distortion all vary between users, the default threshold is a conservative estimate. The personal pinch trainer records ten comfortable pinch examples from your own hand and calculates a threshold that fits you specifically. Training takes less than a minute, persists across browser sessions, and never stores camera images — only the numeric ratios computed from your landmarks.
+
+## The Pinch Ratio Formula
+
+AirDrawio measures how closed your hand is using a normalized ratio that stays consistent whether your palm faces the camera directly or is turned sideways. MediaPipe provides both projected 2D image landmarks and 3D world landmarks; the detector prefers the 3D set so that a sideways palm does not make fingertips appear artificially far apart.
+
+```text
+pinchRatio = distance(thumbTip, indexTip)
+             --------------------------------
+             max(
+               distance(indexMCP, pinkyMCP),
+               distance(wrist, middleMCP),
+               distance(wrist, indexMCP),
+               distance(wrist, pinkyMCP)
+             )
+```
+
+The denominator takes the longest of four stable palm spans. A single span such as `indexMCP → pinkyMCP` collapses when the hand turns perpendicular to the camera; using the maximum of several spans keeps the scale robust across yaw. If 3D world landmarks are unavailable, the same formula is applied to projected 2D coordinates as a fallback.
+
+## Default Hysteresis
+
+Before training, the pinch detector uses these built-in thresholds:
+
+| Transition | Value |
+|---|---|
+| Start candidate (pinch begins) | ratio below **0.46** |
+| Confirm pinch | after **55 ms** sustained |
+| Release pinch | ratio above **0.62** |
+| Cooldown after release | **90 ms** |
+
+The gap between the start threshold (0.46) and the release threshold (0.62) prevents rapid oscillation near the boundary. The 55 ms minimum duration rejects single-frame landmark noise. After training, the start threshold is replaced by your personal value while the release threshold and timing remain the same.
+
+## How Training Works
+
+The trainer records ten normalized pinch ratios from frames where your hand is clearly pinched. It does not record video frames — only the dimensionless number that the formula above produces for each sample. Once ten samples are collected, it calculates your personal threshold using a robust algorithm:
+
+1. The samples are sorted and the median and upper-80th-percentile values are found.
+2. Median absolute deviations are computed to measure spread without being skewed by outliers.
+3. A margin is placed above your upper comfortable pinch: `max(0.035, medianDeviation × 2.5, median × 0.18)`.
+4. The final threshold is clamped to the safe operating range **[0.14, 0.78]** and rounded to three decimal places.
+
+This approach means one noisy landmark frame cannot dominate the result, and the boundary is always placed meaningfully above your loosest comfortable pinch.
+
+## Training Steps
+
+<Steps>
+  <Step title="Enable Pinch Fallback">
+    Open the Settings panel (right rail) and turn on the **Pinch fallback** toggle. The pinch training controls appear below the toggle. You can also access the trainer from **Test controls → Train** in the top bar.
+  </Step>
+  <Step title="Click Train Pinch">
+    Click the **Train pinch** button (or **Retrain pinch** if a profile already exists). The GestureTrainer overlay opens and guides you through the session.
+  </Step>
+  <Step title="Capture Ten Samples">
+    Follow the on-screen prompts to capture ten comfortable pinches. Include both **front-facing** hand angles (palm toward the camera) and **side-on** angles to ensure the trained threshold works across orientations. The trainer counts each valid pinch and shows your progress.
+  </Step>
+  <Step title="Review the Result">
+    After the tenth sample the threshold is calculated and saved automatically. A confirmation message in the status bar shows the trained value, for example: **"Pinch trained at 0.512 and saved in this browser."** The Settings panel immediately shows **Personal profile** next to the Train button.
+  </Step>
+</Steps>
+
+## Reloading the Profile
+
+The trained profile is stored under the key `airdrawio.gesture-profile.v1` in browser `localStorage`. AirDrawio reads it on startup and pre-fills the pinch threshold in Settings with your trained value. You do not need to retrain after closing and reopening the browser, as long as you use the same browser profile on the same device.
+
+## Resetting to the Default
+
+Click **Reset** next to the Train button to clear your personal profile. The threshold in the Settings panel reverts immediately to the improved default of **0.46**, and the profile badge changes from "Personal profile" to "Improved default". The `localStorage` entry is removed.
+
+<Note>
+  **Privacy:** The trainer stores only normalized numeric ratios — small decimal numbers such as `0.31`, `0.28`, `0.33`. No camera frames, images, or video are ever written to storage or transmitted anywhere. All landmark processing happens locally in the browser page.
+</Note>
+
+## Tips for a Good Training Session
+
+- Sit in your normal working position with your usual lighting.
+- Make pinches that feel comfortable and sustainable, not exaggerated.
+- Vary the angle: do about five samples facing the camera and five at a 45–90° sideways angle.
+- If your pinch ratio is too far from the default range, the trainer will warn you and ask you to try again.
+- Use the **Debug panel** (Settings → Debug panel) to watch the live pinch ratio while your hand is open and while pinching, to understand your personal range before training.

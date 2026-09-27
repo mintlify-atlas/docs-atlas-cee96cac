@@ -1,0 +1,83 @@
+---
+title: "Configuring AirDrawio Gesture and Display Settings"
+sidebarTitle: "Settings"
+description: "Tune gesture sensitivity, smoothing, detection confidence, pinch fallback, camera options, and canvas controls from the right-rail Settings panel."
+---
+
+The Settings panel lives in the right rail of the AirDrawio workspace and stays visible in both Mouse Mode and Gesture Mode. Every change takes effect immediately — there is no Save button. Settings are grouped into three sections: **Selection**, which lets you recolor or delete the currently selected shape; **Gesture feel**, which controls how MediaPipe input is translated into pointer and click events; and **Canvas**, which exposes zoom shortcuts. All values are held in React state and reset to their defaults when the page is reloaded.
+
+## Selection
+
+The top card shows the label of the currently selected shape, or "Nothing selected" when the canvas has no active selection. Two controls are available when a shape is selected.
+
+**Shape color** — Five preset fill colors are offered as swatches (light cyan, light purple, light orange, light green, and white). Click any swatch to apply that fill to the selected shape. The swatches are disabled when nothing is selected.
+
+**Delete selection** — The trash-can button removes the selected shape or group from the diagram. This is equivalent to pressing `Delete` or `Backspace` on the keyboard, or saying "delete" in Gesture Mode.
+
+## Gesture Feel
+
+<ParamField body="Sensitivity" type="number" default="1.25">
+  Pointer amplification factor. The index-fingertip position is multiplied by this value before it is mapped to screen coordinates, so a higher number makes the cursor travel farther for the same physical finger movement. Range: **0.75 – 1.80**, in steps of 0.05. Increase this if your camera is far away or your movements are small; decrease it if the cursor overshoots targets.
+</ParamField>
+
+<ParamField body="Smoothing" type="number" default="0.2">
+  Exponential moving average alpha for the slow-motion path. The smoother blends the current landmark position with the previous output: `smoothed = alpha × current + (1 − alpha) × previous`. Range: **0.08 – 0.50**, in steps of 0.02 (displayed as a percentage). Higher values make the cursor more responsive but less smooth; lower values produce a fluid glide at the cost of a slight tracking lag. The fast-motion alpha is derived automatically as `min(0.78, max(0.48, smoothing × 2.5))`.
+</ParamField>
+
+<ParamField body="Confidence" type="number" default="0.6">
+  Minimum MediaPipe hand-detection confidence required for a frame to move the cursor or trigger a gesture. Range: **0.40 – 0.90**, in steps of 0.05 (displayed as a percentage). Frames below this threshold are silently discarded. Lower the value if your hand is frequently not detected in good lighting; raise it to filter out shaky low-quality detections.
+</ParamField>
+
+<ParamField body="Voice actions" type="boolean" default="true">
+  Enables the offline Vosk voice command engine. When on, AirDrawio starts the local model, requests microphone access, and accepts commands such as "select", "hold", "release", "rectangle", "rename", "zoom", and "draw". Turning this off stops the microphone stream and the local worker entirely. Voice actions and pinch actions can be used independently or together.
+</ParamField>
+
+<ParamField body="Pinch fallback" type="boolean" default="false">
+  Enables camera-only click and drag via pinch detection. Disabled by default because voice actions cover all the same interactions with less physical effort. When turned on, three additional controls appear: **Pinch threshold**, **Train pinch / Reset pinch**, and **Double pinch** interval. See [Pinch Training](/configuration/pinch-training) for details.
+</ParamField>
+
+### Pinch Fallback Controls
+
+These controls are only visible when **Pinch fallback** is enabled.
+
+<ParamField body="Pinch threshold" type="number" default="0.46">
+  The normalized pinch ratio below which a close is treated as a pinch candidate. Range: **0.14 – 0.78**, in steps of 0.01. This value is overwritten automatically when you complete a personal training session. See [Pinch Training](/configuration/pinch-training) for the ratio formula and hysteresis details.
+</ParamField>
+
+<ParamField body="Train pinch / Retrain pinch" type="button">
+  Opens the ten-sample personal trainer. After training, the label changes to "Retrain pinch" and the profile badge reads "Personal profile". The trained threshold is stored in `localStorage` and reloaded on the next visit.
+</ParamField>
+
+<ParamField body="Reset pinch" type="button">
+  Clears the stored personal profile and restores the improved default threshold of **0.46**. The button is only shown when a personal profile exists.
+</ParamField>
+
+<ParamField body="Double pinch" type="number" default="400">
+  Maximum gap in milliseconds between the end of one pinch and the start of the next for the pair to be recognized as a double-pinch (equivalent to a double-click). Range: **250 – 650 ms**, in steps of 25 ms. Lower values demand faster successive pinches; higher values give more reaction time.
+</ParamField>
+
+<ParamField body="Mirror camera" type="boolean" default="true">
+  Mirrors the camera X-axis so that moving your finger left moves the on-screen cursor left, matching natural selfie-camera behavior. Disable this only if your webcam is mounted behind you or is already hardware-mirrored.
+</ParamField>
+
+<ParamField body="Camera preview" type="boolean" default="true">
+  Shows the hand-skeleton overlay in the top-right corner of the canvas. The preview renders only the detected landmark skeleton on a black background — no raw camera image is displayed. Hiding the preview does not stop tracking; it only removes the visual.
+</ParamField>
+
+<ParamField body="Debug panel" type="boolean" default="false">
+  Shows a real-time overlay of the current pinch ratio, pointer coordinates, and gesture state (IDLE, HOVERING, DRAGGING, etc.). Useful when tuning thresholds or diagnosing unexpected behavior. The overlay is positioned in the bottom-left corner and updates every ~110 ms.
+</ParamField>
+
+## Canvas
+
+The Canvas section provides three zoom shortcuts that are always available regardless of input mode.
+
+| Button | Action |
+|--------|--------|
+| **−** (Zoom out) | Steps the maxGraph viewport out by one level |
+| **100%** (Reset zoom) | Restores the canvas to 100 % and re-centers the view |
+| **+** (Zoom in) | Steps the maxGraph viewport in by one level |
+
+<Note>
+  In Gesture Mode you can also say "zoom in" or "zoom out" as voice commands, or say "zoom" to enter the continuous hand-gesture zoom mode where moving toward the camera zooms in and moving away zooms out.
+</Note>

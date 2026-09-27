@@ -1,0 +1,98 @@
+---
+title: "Wispr Flow Integration for Hands-Free Shape Renaming"
+sidebarTitle: "Wispr Flow"
+description: "Set up the optional macOS Wispr Flow bridge to dictate shape labels hands-free, including Accessibility permission and the one-time terminal approval."
+---
+
+AirDrawio integrates with Wispr Flow for one specific purpose: free-form shape label dictation. Every other action — selecting shapes, drawing, connecting, deleting, zooming, and navigating — uses the built-in offline Vosk engine, which works on any platform without additional setup. Wispr is layered on top only when you say "rename", giving you Wispr's full natural-language transcription quality for shape names while the rest of the editor stays hands-free.
+
+<Warning>
+  The Wispr Flow integration is **macOS only**. It requires Xcode Command Line Tools and macOS Accessibility permission. Windows and Linux users can still rename shapes by saying "edit text" to enter label-dictation mode with the built-in Vosk engine.
+</Warning>
+
+## How the Integration Works
+
+When you say **"rename"** over a shape, AirDrawio:
+
+1. Opens the shape's inline label editor (the real maxGraph text editor, not a separate dialog).
+2. Posts a request to the local Vite development server bridge, which sends the configured double-Fn hotkey to Wispr via the macOS Accessibility API.
+3. Wispr Flow responds to the hotkey and begins listening for dictation.
+4. You dictate the new shape name naturally.
+5. When you say **"done"**, AirDrawio sends a single Fn tap to close Wispr, waits briefly for Wispr's final word insertion, removes any trailing control word Wispr may have appended, and commits the label to the diagram.
+
+### Why a Native Bridge Is Needed
+
+Browsers run in a sandboxed process that cannot send trusted system-wide keyboard events to other applications. The Fn key that activates Wispr is a system-level input that Chrome cannot generate. The Vite development server therefore compiles a small native helper (`native/wispr_hotkey.cc`) on first run and exposes it as two local API endpoints (`/api/wispr-hotkey` and `/api/open-accessibility-settings`). The helper uses the macOS Accessibility API to inject the hotkey, which is why Accessibility permission is required.
+
+## One-Time Setup
+
+<Steps>
+  <Step title="Install Xcode Command Line Tools">
+    Check whether they are already present by running `xcode-select -p` in a terminal. If it prints a path (for example `/Library/Developer/CommandLineTools`), skip to the next step. Otherwise install them:
+
+    ```bash
+    xcode-select --install
+    ```
+
+    A dialog will appear asking you to confirm the installation. This step is required once per Mac and does not require a full Xcode installation.
+  </Step>
+  <Step title="Open Accessibility Settings">
+    On macOS Ventura and later, go to **System Settings → Privacy & Security → Accessibility**. On macOS Monterey and earlier, go to **System Preferences → Security & Privacy → Privacy → Accessibility**.
+  </Step>
+  <Step title="Enable Your Terminal Application">
+    Click the **+** button and add the terminal application you use to start AirDrawio — for example, **Terminal**, **iTerm2**, or **Ghostty** — and toggle it on. The application must be the process that will launch `npm run dev`.
+  </Step>
+  <Step title="Add the node Executable if Prompted">
+    After starting AirDrawio, if it shows a permission card with a specific `node` executable path, add and enable that exact path in the Accessibility list as well. Click **+**, press **⌘⇧G** to open the Go to Folder dialog, paste the path shown in the card, and click **Open**.
+  </Step>
+  <Step title="Fully Restart the Terminal Application">
+    After granting Accessibility access, **completely quit** the terminal application (⌘Q, not just close the window) and reopen it. macOS grants the permission to the running process only after a fresh launch.
+  </Step>
+  <Step title="Start AirDrawio Again">
+    From the approved terminal application, run:
+
+    ```bash
+    npm run dev
+    ```
+
+    Open [http://127.0.0.1:5173](http://127.0.0.1:5173), switch to **Gesture** mode, and say "rename" over a shape to confirm that Wispr activates.
+  </Step>
+</Steps>
+
+<Note>
+  **Process ownership matters.** Accessibility permission is granted to the specific process that calls the Accessibility API — not to a user account or application name globally. If you start AirDrawio from Ghostty, enabling Terminal in Accessibility settings will not help. If you start it from an IDE's integrated terminal or a background launch agent, that process must be the one that is enabled. When in doubt, start `npm run dev` directly from the terminal that you added to the Accessibility list.
+</Note>
+
+## Rename Usage Flow
+
+Once setup is complete, renaming a shape is entirely hands-free:
+
+<Steps>
+  <Step title="Hover Over a Shape">
+    Move your index fingertip so the camera cursor is inside the shape you want to rename.
+  </Step>
+  <Step title="Say 'Rename'">
+    AirDrawio opens the inline label editor and sends the double-Fn hotkey to Wispr. The status bar shows **"Wispr Flow is listening. Say the new name, then say 'Done'."** A listening pill also appears at the bottom of the canvas.
+  </Step>
+  <Step title="Dictate the New Name">
+    Speak the name naturally. Wispr transcribes in real time and inserts the text directly into the label editor field.
+  </Step>
+  <Step title="Say 'Done'">
+    AirDrawio sends a single Fn tap to stop Wispr, waits for the final word to be inserted, cleans up any trailing control text, and commits the label. The shape is renamed and normal voice commands resume immediately.
+  </Step>
+</Steps>
+
+## The In-App Permission Card
+
+If AirDrawio attempts to trigger Wispr but the native bridge returns an `ACCESSIBILITY_REQUIRED` error, a permission card appears in the canvas area. The card shows:
+
+- A brief explanation of why the permission is needed.
+- The exact `node` executable path that must be added to the Accessibility list.
+- An **Open Accessibility settings** button that calls the `/api/open-accessibility-settings` bridge endpoint to launch System Settings directly to the correct Privacy & Security pane.
+- A **Not now** button to dismiss the card without losing the diagram state.
+
+After granting access and restarting the terminal, dismiss the card, restart AirDrawio, and say "rename" again.
+
+## Cancelling a Rename
+
+Say **"cancel"** at any point during a Wispr rename session. AirDrawio will attempt to send the Wispr stop hotkey, discard the partially dictated text, and close the label editor without saving changes. Normal voice commands are restored immediately.

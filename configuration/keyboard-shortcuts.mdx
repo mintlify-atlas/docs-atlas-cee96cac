@@ -1,0 +1,66 @@
+---
+title: "AirDrawio Keyboard Shortcuts and Hotkeys Reference"
+sidebarTitle: "Keyboard Shortcuts"
+description: "Every fixed keyboard shortcut in AirDrawio: tool keys, shape insertion, undo/redo, deletion, and how shortcuts stay active during hands-free Gesture Mode."
+---
+
+AirDrawio supports a set of single-key and modifier shortcuts for switching tools, inserting shapes, undoing and redoing edits, and removing selected elements. These shortcuts are fixed — they are not configurable — and they complement both mouse-driven editing and hands-free Gesture Mode. When a shortcut is pressed in Mouse Mode it acts immediately on the maxGraph canvas; in Gesture Mode the same shortcut fires without interrupting hand tracking or voice command listening.
+
+<Note>
+  Keyboard shortcuts remain active while **Gesture Mode** is running. You can press `R` to insert a rectangle or `Cmd/Ctrl + Z` to undo without leaving Gesture Mode or pausing voice command recognition. Shortcuts are only suppressed when the keyboard focus is inside an `<input>`, `<textarea>`, or `contenteditable` element — for example, when a shape label editor is open.
+</Note>
+
+## Tool Selection
+
+| Key | Tool |
+|-----|------|
+| `V` or `Escape` | Pointer (select and move shapes) |
+| `R` | Rectangle — inserts a rectangle at the center of the canvas |
+| `O` | Ellipse — inserts an ellipse at the center of the canvas |
+| `A` | Free line — activates the freehand line drawing tool |
+| `C` | Connector arrow — activates the attached connector tool |
+| `T` | Text — inserts an editable text block at the center of the canvas |
+| `H` | Pan — switches to the hand-pan tool for scrolling the canvas |
+
+`V` and `Escape` both return to the Pointer tool from any other active tool, making it easy to cancel an accidental tool switch without reaching for the mouse.
+
+## Editing
+
+| Key | Action |
+|-----|--------|
+| `Delete` or `Backspace` | Remove the currently selected shape or group |
+| `Cmd + Z` (macOS) / `Ctrl + Z` (Windows, Linux) | Undo the last action |
+| `Cmd + Shift + Z` (macOS) / `Ctrl + Shift + Z` (Windows, Linux) | Redo the last undone action |
+
+Undo and redo use maxGraph's built-in history and cover all graph mutations: shape additions, moves, resizes, label edits, color changes, and connector attachments.
+
+## Mouse Mode Interactions
+
+In **Mouse Mode**, all of maxGraph's built-in pointer interactions are available alongside the keyboard shortcuts:
+
+- **Double-click** a shape to open its inline label editor.
+- **Right-click** a shape or the canvas background to open the context menu.
+- **Click and drag** a shape to move it; drag a resize handle to resize it.
+- **Shift-click** to add individual shapes to the current selection.
+- **Click and drag** on empty canvas to draw a marquee selection around multiple shapes.
+- **Scroll wheel** or **trackpad pinch** to zoom the canvas.
+
+These interactions are always available in Mouse Mode regardless of which keyboard tool is active.
+
+## Gesture Mode Equivalents
+
+Every keyboard shortcut has a voice equivalent when Gesture Mode is active. If your hands are occupied and you prefer not to speak, the keyboard shortcuts remain available as a fallback:
+
+| Keyboard | Voice equivalent |
+|----------|-----------------|
+| `V` / `Escape` | "pointer" |
+| `R` | "rectangle" |
+| `O` | "ellipse" |
+| `C` | "connector" |
+| `T` | "text" |
+| `H` | "pan" |
+| `Delete` / `Backspace` | "delete" |
+| `Cmd/Ctrl + Z` | "undo" |
+| `Cmd/Ctrl + Shift + Z` | "redo" |
+
+The `A` key (free line) and `H` key (pan) do not have dedicated single-word voice commands; use the **Air Pen** ("draw" / "stop drawing") for freehand strokes and the Pointer tool with a voice "hold" drag for canvas panning.

@@ -1,0 +1,81 @@
+---
+title: "Gesture Zoom: Scale the Canvas with Hand and Finger"
+sidebarTitle: "Gesture Zoom"
+description: "Use hand depth and thumb-index aperture together to zoom in and out on the AirDrawio canvas, keeping the point under your pointer perfectly fixed."
+---
+
+Gesture zoom lets you scale the diagram without reaching for a scroll wheel or keyboard shortcut. AirDrawio combines two independent signals — apparent palm size (depth) and thumb-to-index-finger spread (aperture) — and requires both to agree before changing the canvas scale. This dual-signal requirement means ordinary hand repositioning or accidental wrist rotation cannot accidentally zoom the diagram.
+
+<Note>
+  Zoom is point-relative: the canvas coordinate currently under your index-finger pointer stays fixed on screen throughout the entire zoom operation. Everything else scales around that anchor, so you never lose your place in the diagram.
+</Note>
+
+---
+
+## How to use gesture zoom
+
+<Steps>
+  <Step title="Enter zoom mode">
+    Point your index finger at the area of the canvas you want to keep centered, then say **"zoom"**. AirDrawio records the current pointer position as the fixed anchor and activates the zoom gesture detector.
+  </Step>
+  <Step title="Zoom in">
+    Move your hand toward the camera while opening the gap between your thumb and index finger. Both signals must rise together: palm size increases *and* aperture widens. The canvas zooms in, expanding around the anchor point.
+  </Step>
+  <Step title="Zoom out">
+    Move your hand away from the camera while closing the gap between your thumb and index finger. Both signals must fall together: palm size decreases *and* aperture narrows. The canvas zooms out.
+  </Step>
+  <Step title="Reset between strokes">
+    After each deliberate zoom stroke, return your hand to a relaxed, neutral pose and pause for a moment. The detector enters the **resetting** phase and waits for motion to settle before it is ready for the next stroke. Motion during this return trip does not undo the zoom you just applied.
+  </Step>
+  <Step title="Exit zoom mode">
+    Say **"end zoom"** to restore normal pointer controls.
+  </Step>
+</Steps>
+
+---
+
+## Zoom phases
+
+The `ZoomGestureDetector` moves through four phases as you gesture:
+
+| Phase | What it means |
+|-------|---------------|
+| `ready` | Awaiting a deliberate stroke; baseline is tracked slowly so stale poses do not fire |
+| `zooming-in` | An opening stroke has been locked — further in-direction motion continues zooming in |
+| `zooming-out` | A closing stroke has been locked — further out-direction motion continues zooming out |
+| `resetting` | You have reversed direction; the detector is in clutch mode until motion settles |
+
+Once a direction is locked (`zooming-in` or `zooming-out`), reversing immediately triggers the **resetting** phase. The detector ignores all motion during reset and will not apply zoom in either direction until the hand has settled for at least 180 ms. Only then does it return to **ready** and update its reference pose.
+
+---
+
+## How the signals are measured
+
+**Depth (palm size):** AirDrawio averages two palm spans — index-MCP to pinky-MCP, and wrist to middle-MCP — to estimate how close your hand is to the camera. Averaging these two measurements makes the depth signal less sensitive to in-plane hand rotation.
+
+**Aperture (thumb-index spread):** The raw distance between the thumb tip and index tip is divided by the same palm-size estimate. This normalization removes the apparent-size change that comes from moving toward or away from the camera, so only real finger articulation registers.
+
+**Agreement threshold:** Both depth and aperture must change by at least their respective thresholds (≈ 2.5 % depth change and ≈ 5.5 % normalized aperture change relative to the current reference) before a zoom step is emitted.
+
+**Gain and step limit:** The emitted zoom factor is calculated as `exp(magnitude)` where magnitude is a weighted combination of depth and aperture motion, capped at a maximum step of 10 % per frame interval. This keeps zooming feeling smooth even during fast hand movement.
+
+---
+
+## Mutual exclusivity with Air Pen
+
+Air Pen and gesture zoom cannot be active at the same time:
+
+- If you say **"zoom"** while the Air Pen is armed or drawing, the pen is disarmed first.
+- If you say **"draw"** while zoom mode is active, zoom mode ends first.
+
+This prevents the two gesture detectors from competing over the same landmark signals.
+
+---
+
+<Card title="Voice Commands" icon="microphone" href="/controls/voice-commands">
+  Full reference for all spoken commands, including zoom entry and exit phrases.
+</Card>
+
+<Card title="Air Pen" icon="pen-nib" href="/controls/air-pen">
+  Draw shapes by tucking and opening your thumb — mutually exclusive with zoom mode.
+</Card>

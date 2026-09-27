@@ -1,47 +1,129 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Run AirDrawio Locally: Clone, Install, First Gesture"
+sidebarTitle: Quickstart
+description: Step-by-step instructions to clone, install, and start AirDrawio's dev server, grant permissions, and issue your first voice-driven diagram action.
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
+AirDrawio runs entirely in the browser with a Vite development server handling asset serving and — on macOS — the optional Wispr Flow native bridge. The steps below take you from a fresh clone to a working camera cursor and offline voice commands in under five minutes. You only need Node.js, npm, a Chromium browser, a webcam, and a microphone.
 
 ## Prerequisites
 
-Before you begin, you must have:
+Before you begin, confirm the following are in place:
 
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
+- **Node.js 20 or newer** — run `node --version` to check
+- **npm** — bundled with Node.js
+- **Google Chrome** (recommended) or another modern Chromium browser
+- **Webcam and microphone** connected and not blocked by OS-level privacy settings
+- An **internet connection** for the first run (MediaPipe model assets are fetched from a CDN and then cached)
 
-## Get started
+## Install and run
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+  <Step title="Clone the repository">
+    Download the source code to your local machine.
 
     ```bash
-    npm install your-package
+    git clone https://github.com/adi3120/AirDrawio.git
+    cd AirDrawio
     ```
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
+
+  <Step title="Install dependencies">
+    Install all npm packages, including the Vosk WebAssembly runtime, maxGraph, MediaPipe, React 19, and Vite.
+
+    <CodeGroup>
+      ```bash npm
+      npm install
+      ```
+
+      ```bash macOS shortcut (after install)
+      # After running npm install once, you can start the dev server
+      # on macOS by double-clicking this file in Finder instead:
+      # scripts/start-airdrawio.command
+      ```
+    </CodeGroup>
+
+    <Note>
+      The `scripts/start-airdrawio.command` file is a zsh script that changes to the project root and runs `npm run dev`. Double-clicking it in Finder on macOS opens a terminal and starts the dev server — useful if you want a one-click launch after the initial install.
+    </Note>
+  </Step>
+
+  <Step title="Start the development server">
+    Launch the Vite dev server. The server binds to `127.0.0.1:5173` by default.
 
     ```bash
-    your-cli init
+    npm run dev
+    ```
+
+    You should see output like:
+
+    ```
+    VITE v8.x.x  ready in NNNms
+
+    ➜  Local:   http://127.0.0.1:5173/
     ```
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
 
-    ```bash
-    your-cli start
-    ```
+  <Step title="Open AirDrawio in Chrome">
+    Navigate to **http://127.0.0.1:5173** in Chrome. The editor loads in Mouse Mode — the canvas is fully interactive with mouse and keyboard from the start.
+  </Step>
+
+  <Step title="Switch to Gesture Mode">
+    Click the **Gesture** button in the top bar. Chrome will immediately prompt for camera and microphone permissions.
+
+    Allow both permissions. If you accidentally deny one, see [First Use](/first-use) for instructions on re-granting access in Chrome.
+  </Step>
+
+  <Step title="Wait for ready status">
+    Watch the status indicator in the top-right of the toolbar. It will cycle through:
+
+    1. **Loading hand model** — MediaPipe is initializing (internet required on first load)
+    2. **Show one hand** — camera is active; hold one hand in front of the webcam
+    3. **Loading local voice** — the Vosk model is loading from `public/models/`
+    4. **Hand + local voice ready** — fully operational
+
+    Do not speak commands until the status reads **Hand + local voice ready**.
+
+    <Note>
+      Voice commands are fully offline. The Vosk model ships inside the repository and is loaded from `public/models/vosk-small-en-in.model`. No microphone audio is ever sent to a speech service.
+    </Note>
+  </Step>
+
+  <Step title="Make your first diagram action">
+    With the status showing **Hand + local voice ready**:
+
+    1. Move your **index fingertip** in front of the camera — a green dot cursor follows your finger on the canvas.
+    2. Say **"rectangle"** — a rectangle appears at the current cursor position.
+    3. Say **"hold"** — the cursor presses down, beginning a drag.
+    4. Move your finger to reposition the shape.
+    5. Say **"release"** — the shape drops at the new location.
+
+    You are now controlling the diagram editor hands-free.
   </Step>
 </Steps>
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+## Build, preview, and test
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
-</Tip>
+Once you are ready to build a production bundle or run the test suite, use the following commands:
+
+<CodeGroup>
+  ```bash Run tests
+  npm test
+  ```
+
+  ```bash Production build
+  npm run build
+  ```
+
+  ```bash Preview production build
+  npm run preview
+  ```
+</CodeGroup>
+
+`npm test` runs the Vitest test suite in a jsdom environment. `npm run build` invokes `tsc -b` followed by a Vite production build and outputs assets to `dist/`. `npm run preview` serves that `dist/` folder locally so you can verify the production bundle before deployment.
+
+## What's next
+
+- Read [First Use](/first-use) for a detailed walkthrough of permissions, status strings, and troubleshooting.
+- See [Voice Commands](/controls/voice-commands) for the complete command grammar.
+- See [Air Pen](/controls/air-pen) to learn how thumb-close drawing and shape recognition work.

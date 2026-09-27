@@ -1,0 +1,100 @@
+---
+title: "Contributing to AirDrawio — Setup and Guidelines"
+sidebarTitle: "Contributing"
+description: "Dev setup, browser requirements, local voice model notes, MediaPipe asset config, architectural constraints, key design decisions, and known issues."
+---
+
+AirDrawio is built with React 19, TypeScript 5, Vite 8, maxGraph 0.24, Vosk-browser 0.0.8, and MediaPipe Tasks Vision 1.0.1. Node.js 20 or newer is required. The development server runs on `http://127.0.0.1:5173` by default.
+
+## Development setup
+
+<Steps>
+  <Step title="Clone and install">
+    ```bash
+    npm install
+    ```
+    Installs all locked dependencies including the maxGraph core, MediaPipe tasks-vision bindings, Vosk-browser WebAssembly, React, Vitest, and TypeScript.
+  </Step>
+  <Step title="Start the development server">
+    ```bash
+    npm run dev
+    ```
+    Vite starts on `http://127.0.0.1:5173`. Open that URL in Chrome and select **Gesture** in the top bar.
+  </Step>
+  <Step title="Run the test suite">
+    ```bash
+    npm test
+    ```
+    Runs all Vitest unit tests in jsdom. Use `npm run test:watch` for interactive development.
+  </Step>
+  <Step title="Build for production">
+    ```bash
+    npm run build
+    ```
+    Runs a strict TypeScript check (`tsc -b`) followed by the Vite production bundle. Both must pass cleanly.
+  </Step>
+  <Step title="Preview the production bundle">
+    ```bash
+    npm run preview
+    ```
+    Serves the `dist/` output locally so you can verify the production build behaves identically to development.
+  </Step>
+</Steps>
+
+## Browser requirements
+
+- **Camera access** requires `localhost` or an HTTPS origin. Plain `http://` on any other hostname will be blocked by the browser.
+- **Voice** downloads the pinned MediaPipe WebAssembly runtime and hand model from their hosted CDN URLs on the first Gesture Mode start. This requires an internet connection and WebAssembly + Worker support. Chrome is recommended.
+- **Microphone** requires explicit browser permission. AirDrawio disables echo cancellation, noise suppression, and auto-gain on the mic stream to keep the raw audio available for local Vosk decoding.
+
+## Local voice model
+
+The Vosk model lives at `public/models/vosk-small-en-in.model`. It is a gzipped tar archive stored **deliberately without a `.gz` suffix**. Adding the suffix causes some development servers to advertise `Content-Encoding: gzip` and transparently strip the compression layer before the Vosk WebAssembly worker receives the file — Vosk then sees raw uncompressed bytes in a format it cannot parse.
+
+The command grammar lives in `voice/voiceCommandModel.ts`. Keep the grammar narrow and always include `[unk]` in the Kaldi recognizer's grammar array. Without `[unk]`, unrelated background speech is forced to the acoustically nearest command, which produces spurious diagram actions. The `[unk]` token absorbs everything outside the grammar.
+
+## MediaPipe assets
+
+`HandTracker.ts` pins the runtime to `@mediapipe/tasks-vision@1.0.1` and loads the official hosted float16 hand model:
+
+```
+WASM_URL  = https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm
+MODEL_URL = https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task
+```
+
+For an offline or fully bundled distribution, copy the package WebAssembly files and model into `public/` and update both constants in `HandTracker.ts`. The `HandTracker` constructor attempts the GPU delegate first and falls back to CPU automatically.
+
+## Architectural constraints
+
+<Warning>
+Do **not** move the maxGraph editor into a cross-origin iframe unless the gesture controller also moves into that same iframe or a fully self-hosted draw.io fork. Synthetic pointer events dispatched from the parent page cannot cross a cross-origin iframe boundary. This is the fundamental reason AirDrawio embeds maxGraph directly rather than embedding diagrams.net. Violating this constraint silently breaks all gesture and voice input with no browser error.
+</Warning>
+
+Two additional constraints must be respected in all new code:
+
+- **Keep high-frequency data out of React state.** Landmarks, cursor position, and pointer bridge state must live in controller objects and refs. Only update React state for human-visible status UI, throttled to approximately 110 ms. Writing landmark data to React state on every camera frame will cause the entire component tree to re-render at 30 fps.
+- **Pointer events as the public input abstraction.** All synthetic input goes through `PointerEventBridge`. Emit matching `MouseEvent` compatibility events after each `PointerEvent` because maxGraph's internal interaction stack still consumes mouse events in parts of its pipeline.
+
+## Key design decisions
+
+These decisions are recorded in `PROGRESS.md` and inform the architecture:
+
+- **maxGraph directly** — synthetic pointer events cannot cross the diagrams.net iframe boundary, so the graph engine runs in the same page.
+- **Pointer events as the abstraction** — the gesture layer emits `PointerEvent`; mouse compatibility events are a maxGraph implementation detail.
+- **Explicit Pan and Connector modes** — pan and connector operations use dedicated tool modes where pose recognition or small native handles would reduce reliability.
+- **`DrawioBridge` interface** — separates UI from the maxGraph controller so a future full draw.io fork can implement the same interface without changing the voice or gesture layers.
+- **`DiagramRefiner` as an empty boundary** — the interface is declared but not implemented, reserved for future AI-assisted layout.
+
+## Known issues
+
+<Accordion title="MediaPipe assets require internet on first load">
+The MediaPipe WebAssembly runtime and float16 hand model are loaded from hosted CDN URLs. Network access is required the first time Gesture Mode starts in a new browser profile or after the cache is cleared. The next milestone will bundle these assets locally.
+</Accordion>
+
+<Accordion title="Native connection handles are small">
+maxGraph's built-in connection port handles are small and difficult to target with a fingertip cursor. The two-selection voice Connector tool (`start arrow` / `end arrow`) is the reliable gesture fallback for creating attached connectors. The `select top`, `select bottom`, `select left`, and `select right` voice commands provide exact side-center anchors without requiring precise handle targeting.
+</Accordion>
+
+<Accordion title="Wispr bridge is macOS-only">
+The optional Wispr Flow rename integration compiles a native macOS addon (`native/wispr_hotkey.cc`) using `xcrun clang++` and requires Accessibility permission for the specific terminal process that launches Vite. Enabling Terminal in System Settings → Privacy → Accessibility does not help if AirDrawio was started from Ghostty, an IDE, or another host — the permission must be granted to that exact process. The bridge returns `ACCESSIBILITY_REQUIRED` with the current `process.execPath` when the permission is missing.
+</Accordion>

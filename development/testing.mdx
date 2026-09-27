@@ -1,0 +1,92 @@
+---
+title: "Testing Guide for AirDrawio Gesture and Voice Input"
+sidebarTitle: "Testing"
+description: "How to run AirDrawio's Vitest unit tests, what they cover, the recommended manual test sequence, and how to tune pinch thresholds with the debug overlay."
+---
+
+AirDrawio's test strategy pairs a Vitest unit suite that covers the gesture, voice, and coordinate pipeline with a nine-step instrumented in-app flow that verifies real maxGraph behavior. The unit tests require no webcam or microphone and run entirely in jsdom. The in-app guided test requires both.
+
+## Running tests
+
+```bash
+npm test            # run all unit tests (Vitest)
+npm run test:watch  # watch mode
+```
+
+Tests run in a jsdom environment with setup from `src/test/setup.ts`. Coverage reports are available in text and HTML formats via `npm test -- --coverage`.
+
+## What the unit tests cover
+
+The test suite exercises every layer of the hands-free pipeline without a physical camera or microphone:
+
+- **Voice phrase normalization** — lowercasing, punctuation stripping, whitespace collapsing
+- **Restricted grammar and command mapping** — every canonical phrase mapped to its `VoiceCommand` type
+- **Left/right click and hold button masks** — correct `button` and `buttons` values in dispatched events
+- **Pinch detection and hysteresis** — start threshold, confirmation delay, release threshold, and cooldown
+- **Palm normalization** — multi-span scale calculation from image and world landmarks
+- **Double-pinch timing** — two pinches within and outside the configurable interval
+- **Drag transition** — PINCHED → DRAGGING threshold and `DRAG_START` event emission
+- **Low-confidence frame rejection** — frames below threshold produce no pointer events
+- **Hand disappearance (HAND_LOST)** — forced `pointerup` emission after 180 ms absence
+- **Coordinate mapping** — mirror, sensitivity scaling, and dead-zone application in `CoordinateMapper`
+- **Landmark smoothing** — velocity-sensitive alpha blending in `LandmarkSmoother`
+- **Adaptive Air Pen thumb calibration** — baseline establishment, adaptive thresholds, hysteresis, jitter tolerance, and stale-frame rejection in `ThumbDrawDetector`
+- **Hand-drawn shape classification and curve simplification** — rectangle, ellipse, line, connector, text, and curve recognition in `AirStrokeRecognizer`
+- **Guided-test movement, resize, and checkpoint verification** — maxGraph cell geometry reads in the `GuidedTestFlow` verification logic
+
+## Testing without a webcam
+
+Mouse, trackpad, and keyboard behavior is always available regardless of mode — AirDrawio works as a standard diagram editor without any camera or microphone. Hands-free behavior is covered by synthetic landmark sequences and mock voice transcripts in the Vitest suite, so the full gesture and voice pipeline can be validated on any machine.
+
+For manual verification, keep the camera preview visible while testing with a real camera. The skeleton overlay shows which landmarks MediaPipe is tracking and confirms that the pointer is following the correct finger.
+
+## Recommended manual test sequence
+
+<Steps>
+  <Step title="Cursor tracking">
+    Move your index fingertip across the frame and confirm the on-screen pointer follows smoothly without lag or jitter.
+  </Step>
+  <Step title="Voice click on toolbar">
+    Point at a toolbar button — for example the Rectangle tool — and say "select." Confirm the tool activates.
+  </Step>
+  <Step title="Drag a shape">
+    Point at a shape on the canvas and say "hold." Move your finger to a new position, then say "release." Confirm the shape moved.
+  </Step>
+  <Step title="Resize via handle">
+    Use the same hold/release flow on a resize handle at the corner of a selected shape. Confirm the shape resizes.
+  </Step>
+  <Step title="Exact-side connector">
+    Point at one shape and say "select top." Move to a second shape and say "select bottom." Confirm a connector appears between the two anchor points.
+  </Step>
+  <Step title="Rename with Wispr">
+    Point at a shape and say "rename." Dictate a new name with Wispr Flow, then say "done." Confirm the label updates.
+  </Step>
+  <Step title="Click variants">
+    Test "left click," "right click," "left hold," and "right hold" with a shape under the cursor. Confirm the correct mouse button behavior in each case.
+  </Step>
+  <Step title="Safe release on hand loss">
+    During an active drag (after saying "hold"), move your hand entirely out of the camera frame. Confirm the editor releases the drag safely rather than remaining stuck.
+  </Step>
+  <Step title="Mouse Mode fallback">
+    Click the Mouse button in the top bar. Confirm the camera and voice stop and normal mouse editing continues without interruption.
+  </Step>
+</Steps>
+
+## Guided test flow (in-app)
+
+The **Test controls** button in the top bar opens the nine-step guided test. It automates the manual sequence above with verifiable assertions:
+
+- Creates temporary fixture shapes ("Gesture test block" and "Gesture test target") at the center of the canvas.
+- Explains each requested action with an exact instruction before asking for it.
+- Reads maxGraph cell geometry, selection state, and graph terminals after each step to verify the result — not just user confirmation.
+- Offers more specific coaching text when a step fails.
+- Records a cumulative pass/fail summary visible at the end.
+- Removes both fixture shapes when the panel is closed.
+
+## Threshold tuning
+
+<Tip>
+Open the debug overlay by enabling **Show debug** in the settings panel. Watch the image pinch ratio and world pinch ratio live while holding a comfortable pinch and while holding a relaxed open hand. The start threshold should sit comfortably above the steady pinched value and well below the resting open-hand value. The release threshold must always be higher than the start threshold — a release threshold at or below the start threshold creates a one-way latch that never releases.
+
+For Air Pen calibration, the adaptive detector sets its own baseline automatically each time you say "draw." If thumb detection feels unreliable, make the open/closed difference more exaggerated when you first show your open hand after arming.
+</Tip>

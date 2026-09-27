@@ -1,0 +1,108 @@
+---
+title: "Air Pen: Draw Shapes Hands-Free with Thumb Gestures"
+sidebarTitle: "Air Pen"
+description: "Learn how to use AirDrawio's Air Pen to draw rectangles, ellipses, lines, arrows, and curves by tucking and opening your thumb in front of the webcam."
+---
+
+The Air Pen turns your hand into a drawing instrument without requiring you to touch anything. AirDrawio watches your thumb's distance from your palm using MediaPipe's 21-landmark hand model and interprets a deliberate tucking motion as the equivalent of pressing a stylus to paper. When you open your thumb again, the stroke ends and the recognizer converts the raw path into a clean maxGraph shape. The entire pipeline runs locally in the browser — no stylus, no tablet, no extra hardware needed.
+
+---
+
+## Drawing workflow
+
+<Steps>
+  <Step title="Arm the pen">
+    Say **"draw"**. AirDrawio switches to Air Pen mode and waits for you to show your baseline pose.
+  </Step>
+  <Step title="Show your open-thumb baseline">
+    Hold your hand in a comfortable, relaxed open-thumb pose for a brief moment. AirDrawio samples this pose and stores it as your personal open baseline for this session. Every subsequent threshold is calculated relative to what you just showed, so the pen adapts to your hand shape and how far the camera is from you.
+  </Step>
+  <Step title="Tuck your thumb to start inking">
+    Bring your thumb in toward your palm and hold it there briefly. As soon as the detector confirms the closed pose (it requires a short dwell to filter out landmark jitter), ink starts at the current index-finger pointer position.
+  </Step>
+  <Step title="Trace your shape">
+    Move your index fingertip to draw the outline. The raw pointer trail is recorded continuously while your thumb stays tucked.
+  </Step>
+  <Step title="Open your thumb to finish the stroke">
+    Extend your thumb back to (or past) the open position. The stroke ends and the recognizer immediately classifies the path into the best-matching shape type, then inserts a clean maxGraph element on the canvas at those coordinates.
+  </Step>
+  <Step title="Put the pen away">
+    Say **"stop drawing"** when you are done. AirDrawio returns to normal pointer mode.
+  </Step>
+</Steps>
+
+---
+
+## Automatic shape recognition
+
+After each stroke the recognizer analyses the raw point path and maps it to one of six output types:
+
+| What you drew | What AirDrawio creates |
+|---------------|------------------------|
+| A closed loop (start and end close together) | **Rectangle** or **ellipse** — whichever fits the path better |
+| A roughly straight stroke | **Straight line** |
+| A stroke with a clear turn-back arrowhead | **Connector arrow** |
+| A wide, repeated mark with many direction changes | **Editable text label** |
+| An intentional curve that does not match any above | **Smoothed curve** |
+
+**Closed shapes:** The recognizer measures how closely the outline hugs a rectangular border versus an ellipse, and picks the lower error. Both ends of the path must come within 30 % of the diagonal to be considered closed.
+
+**Straight lines:** The path must have a straightness ratio above 0.84 and a maximum perpendicular deviation below 10 % of the bounding diagonal.
+
+**Connector arrows:** The recognizer looks for a farthest-point "tip" at roughly 42–99 % along the path, followed by a short tail that curves back toward the tip — the classic arrowhead hook.
+
+**Text marks:** Wide, complex paths with a path-length-to-diagonal ratio above 3.15 and enough simplified vertices are classified as text and automatically open the inline editor so you can type or dictate the label.
+
+**Curves:** Everything else is smoothed with the Ramer–Douglas–Peucker algorithm and inserted as a maxGraph curved edge, preserving intentional bends rather than collapsing them to a chord.
+
+<Note>
+  Strokes with fewer than four clean sample points, or whose bounding diagonal is smaller than 18 screen pixels, are discarded. AirDrawio shows a brief coaching message when this happens — try making the shape a little larger.
+</Note>
+
+---
+
+## How thumb detection works
+
+The `ThumbDrawDetector` uses orientation-independent 3D world landmarks from MediaPipe whenever they are available, falling back to 2D projected image landmarks when world data is absent. This means the gesture works whether your palm faces the camera or turns sideways.
+
+**Adaptive baseline:** Each time the pen is armed and you show an open pose, the detector records the ratio of thumb-tip-to-palm-center distance divided by palm width. This ratio becomes your personal open threshold for the session. Closing is then measured as a relative drop from *your* baseline rather than a fixed anatomical constant.
+
+**Hysteresis:** Two separate thresholds prevent flickering near the boundary. The ratio must drop a minimum of 6.5 percentage points below the baseline before a close candidate is even considered.
+
+**Dwell filtering:** A candidate pose must persist for at least 75 ms before it is confirmed. A single noisy landmark frame cannot start or stop a stroke.
+
+**Grace period:** If the detector briefly sees neutral evidence (neither clearly open nor clearly closed) during an established stroke, it waits up to 150 ms before abandoning the candidate. Ordinary MediaPipe jitter in mid-air is well below this window.
+
+---
+
+## Tips for best results
+
+<Tip>
+  Keep your full hand inside the camera frame at all times. The detector relies on palm-width landmarks that disappear when your wrist drifts out of view.
+</Tip>
+
+<Tip>
+  Make the difference between your open and closed pose as clear as you comfortably can. An exaggerated open spread and a firm tuck inward gives the adaptive thresholds the most margin to work with.
+</Tip>
+
+<Tip>
+  Draw objects that occupy at least a few centimetres on screen. Very small strokes fall below the 18-pixel diagonal minimum and are discarded.
+</Tip>
+
+<Tip>
+  You do not need to point your thumb toward the camera. The distance metric uses 3D world coordinates, so any comfortable tucking direction works.
+</Tip>
+
+<Tip>
+  If a shape is recognized incorrectly, say "undo" and redraw it more deliberately — for example, trace the corners of a rectangle with a clear right-angle path, or keep a line very straight.
+</Tip>
+
+---
+
+<Card title="Voice Commands" icon="microphone" href="/controls/voice-commands">
+  Trigger clicks, tool switches, and editing operations entirely by voice.
+</Card>
+
+<Card title="Lines & Connectors" icon="arrow-right" href="/controls/lines-and-connectors">
+  Attach smart connector arrows between shapes using voice anchors.
+</Card>
