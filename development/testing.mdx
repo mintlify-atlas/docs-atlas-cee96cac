@@ -19,20 +19,26 @@ Tests run in a jsdom environment with setup from `src/test/setup.ts`. Coverage r
 
 The test suite exercises every layer of the hands-free pipeline without a physical camera or microphone:
 
-- **Voice phrase normalization** — lowercasing, punctuation stripping, whitespace collapsing
-- **Restricted grammar and command mapping** — every canonical phrase mapped to its `VoiceCommand` type
-- **Left/right click and hold button masks** — correct `button` and `buttons` values in dispatched events
-- **Pinch detection and hysteresis** — start threshold, confirmation delay, release threshold, and cooldown
-- **Palm normalization** — multi-span scale calculation from image and world landmarks
-- **Double-pinch timing** — two pinches within and outside the configurable interval
-- **Drag transition** — PINCHED → DRAGGING threshold and `DRAG_START` event emission
-- **Low-confidence frame rejection** — frames below threshold produce no pointer events
-- **Hand disappearance (HAND_LOST)** — forced `pointerup` emission after 180 ms absence
-- **Coordinate mapping** — mirror, sensitivity scaling, and dead-zone application in `CoordinateMapper`
-- **Landmark smoothing** — velocity-sensitive alpha blending in `LandmarkSmoother`
-- **Adaptive Air Pen thumb calibration** — baseline establishment, adaptive thresholds, hysteresis, jitter tolerance, and stale-frame rejection in `ThumbDrawDetector`
-- **Hand-drawn shape classification and curve simplification** — rectangle, ellipse, line, connector, text, and curve recognition in `AirStrokeRecognizer`
-- **Guided-test movement, resize, and checkpoint verification** — maxGraph cell geometry reads in the `GuidedTestFlow` verification logic
+- **Voice phrase normalization** — lowercasing, punctuation stripping, whitespace collapsing (`voiceCommandModel.test.ts`)
+- **Restricted grammar and command mapping** — every canonical phrase mapped to its `VoiceCommand` type (`voiceCommandModel.test.ts`)
+- **VoiceCommandController** — partial-result debouncing, duplicate-command suppression, dictation mode switching, and error recovery (`VoiceCommandController.test.ts`)
+- **VoiceInputMonitor** — microphone start, stop, and error handling paths (`VoiceInputMonitor.test.ts`)
+- **Left/right click and hold button masks** — correct `button` and `buttons` values in dispatched events (`PointerEventBridge.test.ts`)
+- **Pinch detection and hysteresis** — start threshold, confirmation delay, release threshold, and cooldown (`PinchDetector.test.ts`)
+- **Palm normalization** — multi-span scale calculation from image and world landmarks (`PinchDetector.test.ts`)
+- **Double-pinch timing** — two pinches within and outside the configurable interval (`DoublePinchDetector.test.ts`)
+- **Drag transition** — PINCHED → DRAGGING threshold and `DRAG_START` event emission (`GestureEngine.test.ts`)
+- **Low-confidence frame rejection** — frames below threshold produce no pointer events (`GestureEngine.test.ts`)
+- **Hand disappearance (HAND_LOST)** — forced `pointerup` emission after 180 ms absence (`GestureEngine.test.ts`)
+- **Gesture profile persistence** — training threshold saved to and loaded from `localStorage` (`GestureProfile.test.ts`)
+- **Zoom gesture detection** — stroke classification, phase transitions, and reset behavior (`ZoomGestureDetector.test.ts`)
+- **Coordinate mapping** — mirror, sensitivity scaling, and dead-zone application in `CoordinateMapper` (`CoordinateMapper.test.ts`)
+- **Landmark smoothing** — velocity-sensitive alpha blending in `LandmarkSmoother` (`LandmarkSmoother.test.ts`)
+- **Adaptive Air Pen thumb calibration** — baseline establishment, adaptive thresholds, hysteresis, jitter tolerance, and stale-frame rejection in `ThumbDrawDetector` (`ThumbDrawDetector.test.ts`)
+- **Hand-drawn shape classification and curve simplification** — rectangle, ellipse, line, connector, text, and curve recognition in `AirStrokeRecognizer` (`AirStrokeRecognizer.test.ts`)
+- **Perimeter anchor snapping** — nearest-edge anchor calculation from normalized hit coordinates (`perimeterAnchor.test.ts`)
+- **Wispr native bridge** — hotkey request serialization and error surface (`WisprBridge.test.ts`)
+- **Guided-test movement, resize, and checkpoint verification** — `hasMoved`, `hasResized`, and `isPointInside` helper logic (`guidedTestModel.test.ts`)
 
 ## Testing without a webcam
 

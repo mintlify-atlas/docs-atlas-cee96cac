@@ -33,7 +33,7 @@ stateDiagram-v2
   DRAGGING --> IDLE: hand lost + forced pointerup
 ```
 
-`GestureStateMachine` manages the IDLE, HOVERING, PINCHED, and DRAGGING states for pinch-fallback interactions. The `CursorController` reflects the logical DRAGGING and TEXT_EDIT states to the virtual cursor CSS classes and to the React status panel at the lower update cadence.
+`GestureStateMachine` manages the IDLE, HOVERING, PINCHED, and DRAGGING states for pinch-fallback interactions. The full `GestureState` type also includes DRAWING (active Air Pen stroke) and PANNING (pan tool active). `CursorController` reflects all logical states to the virtual cursor CSS classes and to the React status panel at the lower update cadence.
 
 ## Landmark smoothing
 
@@ -48,7 +48,7 @@ The alpha value adapts to motion speed:
 - **Slow motion** → lower alpha → heavier damping → precision at the cost of a small lag.
 - **Fast motion** → higher alpha → less damping → follows the hand without trailing behind.
 
-The `slowAlpha` default is **0.2**. `fastAlpha` is computed as `min(0.78, max(0.48, smoothing × 2.5))` where `smoothing` is the settings slider value, also defaulting to 0.2. A configurable `velocityThreshold` (default 0.065 normalized units) determines where the blend is fully fast.
+`LandmarkSmoother` exposes a `setConfig` method that accepts `slowAlpha`, `fastAlpha`, and `velocityThreshold`. The built-in defaults are `slowAlpha: 0.2`, `fastAlpha: 0.62`, and `velocityThreshold: 0.065` normalized units. At runtime, App.tsx overrides `slowAlpha` and `fastAlpha` from the settings slider: `slowAlpha` is set to the smoothing value directly, and `fastAlpha` is computed as `min(0.78, max(0.48, smoothing × 2.5))`. With the default smoothing of `0.2` this produces `fastAlpha: 0.5`.
 
 After coordinate mapping, a **1.5 px screen-space dead zone** removes sub-pixel tremor. If the new position is within 1.5 px of the previous mapped position, the previous position is kept.
 

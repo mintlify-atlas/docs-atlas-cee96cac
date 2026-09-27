@@ -20,8 +20,8 @@ These commands translate directly into pointer-button events at the current inde
 |-----|--------|
 | `select` / `left click` / `click` | Primary click at the pointer |
 | `select that shape` | Select the cell currently under the pointer |
-| `hold` | Begin a drag or marquee-selection stroke |
-| `release` | Finish the drag and drop the held object |
+| `hold` / `left hold` / `select and hold` | Begin a drag or marquee-selection stroke (left button) |
+| `release` / `drop` / `let go` | Finish the drag and drop the held object |
 | `right click` | Right mouse button click at the pointer |
 | `right hold` | Right mouse button hold at the pointer |
 
@@ -38,7 +38,7 @@ Shape creation commands insert a new vertex centered at the pointer's current po
 | Say | Action |
 |-----|--------|
 | `rectangle` | Create a rectangle at the pointer |
-| `ellipse` | Create an ellipse at the pointer |
+| `ellipse` / `circle` | Create an ellipse at the pointer |
 | `text` | Create a text label at the pointer and open the inline editor |
 
 ---
@@ -49,7 +49,7 @@ Shape creation commands insert a new vertex centered at the pointer's current po
 |-----|--------|
 | `pointer` | Switch to the Pointer tool |
 | `line` | Switch to the Line tool |
-| `connector` | Switch to the Connector tool |
+| `connector` / `arrow` | Switch to the Connector tool |
 | `pan` | Switch to the Pan tool |
 
 ---
@@ -95,6 +95,8 @@ See [Air Pen](/controls/air-pen) for the full drawing workflow.
 |-----|--------|
 | `zoom` | Enter gesture zoom mode; the canvas point under the pointer stays fixed |
 | `end zoom` | Exit gesture zoom mode and restore normal controls |
+| `zoom in` / `magnify` | Step zoom in one increment |
+| `zoom out` / `zoom back` | Step zoom out one increment |
 
 See [Gesture Zoom](/controls/gesture-zoom) for the full gesture description.
 
@@ -116,9 +118,10 @@ Wispr integration is optional and requires macOS with Accessibility permission g
 | Say | Action |
 |-----|--------|
 | `edit text` | Enter label-dictation mode for the hovered or selected shape |
+| `whisper` / `start dictation` | Also enters label-dictation mode |
 | `right shift` | Finish dictation and commit the label |
 
-In dictation mode the local recognizer still understands only its fixed grammar phrases. Recognized words are appended to the label until `right shift` is spoken.
+In dictation mode the local recognizer still understands only its fixed grammar phrases. Recognized words are appended to the label until `right shift` (or `stop dictation`) is spoken.
 
 ---
 

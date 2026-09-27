@@ -14,7 +14,7 @@ AirDrawio is structured around focused, single-responsibility modules. Each area
 |--------|---------------|
 | `camera/CameraManager.ts` | Owns `getUserMedia`, video element playback, and stream cleanup. Requests ideal 1280×720 at 30 fps from the user-facing camera. Stops all tracks on `stop()`. |
 | `tracking/HandTracker.ts` | Owns MediaPipe initialization and per-frame video inference. Pins `@mediapipe/tasks-vision@1.0.1` and the official hosted float16 hand landmarker model. Attempts GPU delegate first and falls back to CPU. Exposes `initialize()`, `detect(video, timestamp)`, and `close()`. |
-| `tracking/LandmarkSmoother.ts` | Velocity-sensitive exponential moving average over a single landmark. Fast motion raises alpha to reduce lag; slow motion keeps alpha low for precision. Exposes `update(landmark)` and `reset()`. |
+| `tracking/LandmarkSmoother.ts` | Velocity-sensitive exponential moving average over a single landmark. Fast motion raises alpha to reduce lag; slow motion keeps alpha low for precision. Configurable via `setConfig({ slowAlpha, fastAlpha, velocityThreshold })`. Exposes `update(landmark)` and `reset()`. Default constants: `slowAlpha: 0.2`, `fastAlpha: 0.62`, `velocityThreshold: 0.065`. |
 | `tracking/handTypes.ts` | Defines `NormalizedLandmark`, `HandFrame` (21 image landmarks, optional world landmarks, confidence, timestamp), and `TrackingSnapshot` (the React-visible snapshot with `handDetected`, `confidence`, `fps`, `index`, `thumb`, `pinchRatio`, `pinchImageRatio`, `pinchWorldRatio`, and `pinchSource`). |
 
 </Accordion>
@@ -23,7 +23,7 @@ AirDrawio is structured around focused, single-responsibility modules. Each area
 
 | Module | Responsibility |
 |--------|---------------|
-| `cursor/CoordinateMapper.ts` | Maps a mirrored normalized landmark to viewport pixel coordinates. Applies configurable sensitivity scaling around the viewport center and a pixel dead zone to suppress sub-pixel tremor. |
+| `cursor/CoordinateMapper.ts` | Maps a normalized landmark to viewport pixel coordinates. Applies optional X-axis mirroring (`mirrorX`), configurable sensitivity scaling around the viewport center, and a pixel dead zone to suppress sub-pixel tremor. Configured via `setConfig({ mirrorX, sensitivity })`. |
 | `cursor/CursorController.ts` | Updates the virtual cursor DOM element outside React rendering on every frame. Translates `GestureEvent` values and voice-driven actions (`voiceMove`, `voiceClick`, `voicePress`, `voiceRelease`) into `PointerEventBridge` calls. Applies CSS state classes to the cursor element. |
 | `cursor/VirtualCursor.tsx` | The visible cursor dot React component. Controlled entirely through a forwarded `ref` by `CursorController`; never re-renders from gesture data. |
 
@@ -34,12 +34,12 @@ AirDrawio is structured around focused, single-responsibility modules. Each area
 | Module | Responsibility |
 |--------|---------------|
 | `gestures/GestureEngine.ts` | Orchestrates pinch detection, confidence gating, and state machine transitions for one hand frame. Exposes `update(frame, position)`, `handLost(timestamp)`, `getState()`, and threshold setters. |
-| `gestures/GestureStateMachine.ts` | Owns IDLE → HOVERING → PINCHED → DRAGGING → HOVERING transitions. Emits typed `GestureEvent` objects (`MOVE`, `PINCH_START`, `DRAG_START`, `DRAG_MOVE`, `PINCH_END`, `DOUBLE_PINCH`, `HAND_LOST`). |
+| `gestures/GestureStateMachine.ts` | Owns IDLE → HOVERING → PINCHED → DRAGGING → HOVERING transitions for pinch-fallback interactions. Emits typed `GestureEvent` objects (`MOVE`, `PINCH_START`, `DRAG_START`, `DRAG_MOVE`, `PINCH_END`, `DOUBLE_PINCH`, `HAND_LOST`). |
+| `gestures/gestureTypes.ts` | Defines `GestureState` (`IDLE`, `HOVERING`, `PINCHED`, `DRAGGING`, `DRAWING`, `TEXT_EDIT`, `PANNING`), `PinchPhase`, `PointerPosition`, `GestureEvent`, `GestureInput`, `GestureReading`. |
 | `gestures/PinchDetector.ts` | Orientation-independent 3D pinch ratio measurement with hysteresis, minimum-duration confirmation, and post-release cooldown. Prefers world landmarks with z-axis; falls back to robust 2D palm scale. |
 | `gestures/DoublePinchDetector.ts` | Detects two completed pinches within a configurable interval (default 400 ms, range 250–650 ms) and emits `DOUBLE_PINCH`. |
 | `gestures/ZoomGestureDetector.ts` | Classifies deliberate zoom strokes from landmark sequences and manages the reset phase between strokes. Returns a zoom factor and the current phase (`ready`, `zooming-in`, `zooming-out`, `resetting`). |
 | `gestures/GestureProfile.ts` | Loads, saves, and clears a personal pinch profile from `localStorage`. The profile stores the trained threshold as a numeric ratio. |
-| `gestures/gestureTypes.ts` | Defines `GestureState`, `PointerPosition`, `GestureEvent`, `GestureInput`, `GestureReading`, and `PinchPhase`. |
 
 </Accordion>
 
@@ -68,7 +68,7 @@ AirDrawio is structured around focused, single-responsibility modules. Each area
 
 | Module | Responsibility |
 |--------|---------------|
-| `voice/VoiceCommandController.ts` | Owns the browser-local Vosk recognizer, restricted grammar, partial-result debouncing, duplicate-command suppression, and command/dictation mode switching. Audio stays on-device; the WebAssembly worker runs inside the browser tab. |
+| `voice/VoiceCommandController.ts` | Owns the browser-local Vosk recognizer, restricted grammar, partial-result debouncing, duplicate-command suppression (850 ms window), and command/dictation mode switching. Audio stays on-device; the WebAssembly worker runs inside the browser tab. |
 | `voice/VoiceInputMonitor.ts` | Owns microphone capture via `getUserMedia`, the `AudioContext`, the Web Audio analyser used by the live waveform display, and the `ScriptProcessorNode` that feeds 2048-sample PCM frames to `VoiceCommandController`. Disables echo cancellation, noise suppression, and auto-gain to keep raw audio available for both the oscilloscope and the local decoder. |
 | `voice/voiceCommandModel.ts` | Normalizes transcripts (lowercased, punctuation stripped, whitespace collapsed) and parses them against the explicit command grammar via `parseVoiceCommand` and `parseVoiceCommands`. Exports `LOCAL_VOICE_COMMAND_PHRASES` — the narrow grammar list that includes `[unk]` so unrelated speech is not forced to the nearest command. |
 | `voice/SpeechController.ts` | Web Speech API fallback used for label dictation when local Vosk is unavailable. |
@@ -97,6 +97,14 @@ AirDrawio is structured around focused, single-responsibility modules. Each area
 | `ui/GestureTrainer.tsx` | Ten-capture personal pinch trainer UI. Records normalized ratios only — no camera images. Computes a robust threshold using a median-deviation margin. |
 | `ui/GuidedTestFlow.tsx` | Nine-step guided voice and camera test. Creates temporary fixture shapes, explains each action, reads maxGraph cell geometry to verify results, offers coaching on failure, records pass/fail, and removes fixtures on close. |
 | `ui/DebugOverlay.tsx` | Pinch ratios (image and world), pointer coordinates, and gesture state overlay. Visible when `showDebug: true` in settings. |
+
+</Accordion>
+
+<Accordion title="Testing Utilities">
+
+| Module | Responsibility |
+|--------|---------------|
+| `testing/guidedTestModel.ts` | Pure helper functions (`hasMoved`, `hasResized`, `isPointInside`) used by the guided test flow to verify maxGraph cell geometry results without depending on the controller. |
 
 </Accordion>
 

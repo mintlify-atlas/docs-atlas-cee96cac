@@ -51,10 +51,13 @@ The status string in the top-right toolbar tells you exactly what the system is 
 | Status | Meaning |
 |---|---|
 | **Loading hand model** | MediaPipe Hand Landmarker is initializing. The model weights are being fetched from the CDN (first run) or loaded from the browser cache. Do not try to use the pointer yet. |
+| **Camera off** | The editor is in Mouse Mode. The camera and microphone are not active. Click **Gesture** in the top bar to start Gesture Mode. |
 | **Show one hand** | Camera is active and returning frames, but no hand has been detected above the confidence threshold. Hold one hand clearly in frame. |
 | **Loading local voice** | Camera and hand tracking are working. The Vosk WebAssembly worker is loading the model from `public/models/vosk-small-en-in.model`. Voice commands are not yet active. |
 | **Hand + local voice ready** | Both inputs are fully operational. The cursor follows your index finger and voice commands are being recognized. |
+| **Hand connected** | The camera pointer is active but voice commands are disabled in Settings. The cursor tracks your finger; use keyboard shortcuts or mouse clicks for all actions. |
 | **Voice error** | The Vosk recognition worker encountered an error. Use the **Retry microphone** button shown in the voice HUD to restart the audio pipeline. |
+| **Voice unsupported** | The Vosk WebAssembly runtime could not start in this browser environment. Voice commands are unavailable; the camera pointer still works. |
 | **Microphone blocked** | Chrome's microphone permission was denied or revoked. Voice commands are unavailable until the permission is re-granted. See the troubleshooting section below. |
 | **Tap retry microphone** | The microphone stream was suspended (often by the OS muting the input). Click the **Retry microphone** button in the voice command HUD. |
 | **Reconnecting voice** | The voice worker is attempting to recover from a transient error automatically. |

@@ -63,10 +63,11 @@ Switching from Gesture Mode to Mouse Mode runs a full synchronous teardown in `s
 - Calls `GestureEngine.handLost()` to emit any outstanding `HAND_LOST` transition and release pointer state
 - Calls `HandTracker.close()` to shut down the MediaPipe task
 - Stops all camera and microphone media tracks
+- Stops the local Vosk voice recognizer and tears down the microphone `AudioContext`
 - Clears the skeleton preview canvas
 - Resets `LandmarkSmoother` and `ZoomGestureDetector`
 - Resets `ThumbDrawDetector` and discards any in-progress air stroke
-- Clears the anchor marker and pointer position
+- Clears the anchor marker, zoom mode state, and pointer position
 
 **Hand disappearance** is handled separately from a manual mode switch. If a confident hand frame has not arrived for more than **180 ms**, the tracking loop fires a single `HAND_LOST` transition. `GestureStateMachine.handLost()` returns a forced `pointerup` event so maxGraph cannot remain stuck in a drag with no pointer to release it.
 

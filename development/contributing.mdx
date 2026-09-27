@@ -44,7 +44,8 @@ AirDrawio is built with React 19, TypeScript 5, Vite 8, maxGraph 0.24, Vosk-brow
 ## Browser requirements
 
 - **Camera access** requires `localhost` or an HTTPS origin. Plain `http://` on any other hostname will be blocked by the browser.
-- **Voice** downloads the pinned MediaPipe WebAssembly runtime and hand model from their hosted CDN URLs on the first Gesture Mode start. This requires an internet connection and WebAssembly + Worker support. Chrome is recommended.
+- **Hand tracking** downloads the pinned MediaPipe WebAssembly runtime and float16 hand model from their hosted CDN URLs on the first Gesture Mode start. This requires an internet connection and WebAssembly + Worker support. Chrome is recommended.
+- **Voice** uses the Vosk model bundled at `public/models/vosk-small-en-in.model`. No network call is needed for voice commands; the WebAssembly worker runs entirely inside the browser tab.
 - **Microphone** requires explicit browser permission. AirDrawio disables echo cancellation, noise suppression, and auto-gain on the mic stream to keep the raw audio available for local Vosk decoding.
 
 ## Local voice model
